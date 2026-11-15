@@ -7,7 +7,7 @@
 // happens to pick it. Prints nothing (no extra context, no cost) otherwise.
 //
 // No dependencies, no network, no files written. Personal extra phrases may be listed one per
-// line in ~/.claude/dajuguan/my-triggers.txt (optional; read only).
+// line in ~/.claude/dajuguan/my-triggers.txt, or <CLAUDE_CONFIG_DIR>/dajuguan/ for another profile (optional; read only).
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -29,7 +29,7 @@ const compile = (list) => list.map((p) => ({
 
 function personal() {
   try {
-    return fs.readFileSync(path.join(os.homedir(), ".claude", "dajuguan", "my-triggers.txt"), "utf8")
+    return fs.readFileSync(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude"), "dajuguan", "my-triggers.txt"), "utf8")
       .split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
   } catch { return []; }
 }

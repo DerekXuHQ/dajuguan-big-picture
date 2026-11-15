@@ -91,5 +91,14 @@ assert.throws(() => run(), /not valid JSON/);
 assert.equal(read(".claude", "settings.json"), "{ not json");
 assert.ok(!fs.existsSync(f(".claude", "skills", "dajuguan")), "nothing installed when settings are broken");
 
+// A second profile (CLAUDE_CONFIG_DIR) gets its own copy; the default profile is untouched.
+fs.writeFileSync(f(".claude", "settings.json"), JSON.stringify(mine, null, 2));
+const B = f(".claude-b");
+execFileSync(process.execPath, [script, "--no-skill"], { env: { ...process.env, DAJUGUAN_HOME: "", HOME, CLAUDE_CONFIG_DIR: B }, encoding: "utf8" });
+assert.equal(ours(JSON.parse(fs.readFileSync(path.join(B, "settings.json"), "utf8"))).length, 1);
+assert.match(fs.readFileSync(path.join(B, "CLAUDE.md"), "utf8"), /大局观规则/);
+assert.ok(fs.existsSync(path.join(B, "dajuguan", "hooks", "dajuguan-trigger.mjs")));
+assert.equal(ours(JSON.parse(read(".claude", "settings.json"))).length, 0, "default profile untouched");
+
 fs.rmSync(HOME, { recursive: true, force: true });
 console.log("install tests passed: dry run, bilingual install for Claude Code + Codex, hook fires, reinstall, uninstall, bad settings");

@@ -31,7 +31,9 @@ const has = (f) => args.includes(f);
 if (has("--lang")) console.log("Note: --lang is no longer needed — the skill and rule hold both English and Chinese.");
 const DRY = has("--dry-run");
 
-const CLAUDE = path.join(HOME, ".claude");
+// A second Claude Code profile (CLAUDE_CONFIG_DIR=~/.claude-b, for example) is installed into with
+// the same variable it runs with: CLAUDE_CONFIG_DIR=~/.claude-b node install.mjs
+const CLAUDE = process.env.CLAUDE_CONFIG_DIR && !process.env.DAJUGUAN_HOME ? path.resolve(process.env.CLAUDE_CONFIG_DIR) : path.join(HOME, ".claude");
 const P = {
   skill: path.join(CLAUDE, "skills", "dajuguan"),
   home: path.join(CLAUDE, "dajuguan"),
