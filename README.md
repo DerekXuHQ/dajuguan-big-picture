@@ -62,7 +62,7 @@ test/                         trigger tests (real phrasings) + installer tests (
 
 | Where | What | Added by |
 |---|---|---|
-| `~/.claude/skills/dajuguan/SKILL.md` | The skill (English or Chinese) | always |
+| `~/.claude/skills/dajuguan/SKILL.md` | The skill (English or Chinese) | default; skip with `--no-skill` |
 | `~/.claude/dajuguan/hooks/` | The hook script and `triggers.json` | default; skip with `--no-hook` |
 | `~/.claude/settings.json` | One `UserPromptSubmit` entry pointing at the hook. Merged in: your other settings and hooks stay | default; skip with `--no-hook` |
 | `~/.claude/CLAUDE.md` | The always-on rule, between `<!-- dajuguan:begin -->` and `<!-- dajuguan:end -->` | default; skip with `--no-rule` |
@@ -83,7 +83,7 @@ node install.mjs --dry-run      # see exactly what will change; changes nothing
 node install.mjs                # English skill;  Chinese: node install.mjs --lang zh
 ```
 
-Options: `--lang zh` · `--no-hook` · `--no-rule` · `--codex`. Running it again updates in place and never duplicates anything. On Windows, run the same commands in PowerShell.
+Options: `--lang zh` · `--no-skill` (you already have the skill from elsewhere) · `--no-hook` · `--no-rule` · `--codex`. Running it again updates in place and never duplicates anything. On Windows, run the same commands in PowerShell.
 
 Then start a new Claude Code session and type something like "add export, e.g. PDF and Word". The reply should start with `[Big picture · …]`.
 
@@ -190,7 +190,7 @@ AI 按描述自己挑技能。带「等」的一句短话看上去很简单，�
 
 | 位置 | 内容 | 什么时候装 |
 |---|---|---|
-| `~/.claude/skills/dajuguan/SKILL.md` | 技能（中文或英文） | 一定装 |
+| `~/.claude/skills/dajuguan/SKILL.md` | 技能（中文或英文） | 默认装；`--no-skill` 跳过 |
 | `~/.claude/dajuguan/hooks/` | 钩子脚本和 `triggers.json` | 默认装；`--no-hook` 跳过 |
 | `~/.claude/settings.json` | 加一条 `UserPromptSubmit` 钩子。是合并进去的，你原有的设置和钩子都不动 | 默认装；`--no-hook` 跳过 |
 | `~/.claude/CLAUDE.md` | 常驻规则，夹在 `<!-- dajuguan:begin -->` 和 `<!-- dajuguan:end -->` 之间 | 默认装；`--no-rule` 跳过 |
@@ -211,7 +211,7 @@ node install.mjs --dry-run      # 先看会改哪些地方，什么都不改
 node install.mjs --lang zh      # 中文技能；英文版去掉 --lang zh
 ```
 
-可选参数：`--lang zh`、`--no-hook`、`--no-rule`、`--codex`。重复运行只会原地更新，不会重复添加。Windows 在 PowerShell 里跑同样的命令。
+可选参数：`--lang zh`、`--no-skill`（技能已经从别处装过）、`--no-hook`、`--no-rule`、`--codex`。重复运行只会原地更新，不会重复添加。Windows 在 PowerShell 里跑同样的命令。
 
 装好后开一个新的 Claude Code 会话，试一句「加个导出功能，比如 PDF 和 Word」，回复开头应该是【大局观 · …】。
 

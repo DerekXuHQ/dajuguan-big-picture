@@ -6,7 +6,7 @@
 //   node install.mjs --dry-run       show what would change, change nothing
 //   node install.mjs --uninstall     remove everything this script added
 //
-// Options: --no-hook  --no-rule  --codex (also add the rule to ~/.codex/AGENTS.md)
+// Options: --no-skill (keep a copy you already have)  --no-hook  --no-rule  --codex (also add the rule to ~/.codex/AGENTS.md)
 //
 // Everything it touches (see README "What gets installed"):
 //   ~/.claude/skills/dajuguan/SKILL.md     the skill
@@ -84,15 +84,17 @@ function install() {
   // Check first, write after: a broken settings.json stops the install before anything changes.
   const settings = has("--no-hook") ? null : readJson(P.settings);
   // 1. Skill
-  const skillSrc = path.join(SRC, ...(lang === "zh" ? ["zh", "skills", "dajuguan"] : ["skills", "dajuguan"]), "SKILL.md");
-  const skillDst = path.join(P.skill, "SKILL.md");
-  const same = fs.existsSync(skillDst) && fs.readFileSync(skillDst, "utf8") === fs.readFileSync(skillSrc, "utf8");
-  if (same) say("same", skillDst);
-  else {
-    const existed = fs.existsSync(skillDst);
-    backup(P.skill);
-    write(skillDst, fs.readFileSync(skillSrc, "utf8"));
-    say(existed ? "update" : "add", skillDst, `(${lang})`);
+  if (!has("--no-skill")) {
+    const skillSrc = path.join(SRC, ...(lang === "zh" ? ["zh", "skills", "dajuguan"] : ["skills", "dajuguan"]), "SKILL.md");
+    const skillDst = path.join(P.skill, "SKILL.md");
+    const same = fs.existsSync(skillDst) && fs.readFileSync(skillDst, "utf8") === fs.readFileSync(skillSrc, "utf8");
+    if (same) say("same", skillDst);
+    else {
+      const existed = fs.existsSync(skillDst);
+      backup(P.skill);
+      write(skillDst, fs.readFileSync(skillSrc, "utf8"));
+      say(existed ? "update" : "add", skillDst, `(${lang})`);
+    }
   }
 
   // 2. Hook files + settings entry

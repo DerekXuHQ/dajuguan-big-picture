@@ -63,6 +63,12 @@ assert.ok(!fs.existsSync(f(".claude", "skills", "dajuguan")));
 assert.ok(!fs.existsSync(f(".claude", "dajuguan", "hooks")));
 assert.ok(fs.existsSync(f(".claude", "dajuguan", "my-triggers.txt")));
 
+// --no-skill installs hook + rule only.
+run("--no-skill");
+assert.ok(!fs.existsSync(f(".claude", "skills", "dajuguan")));
+assert.equal(ours(JSON.parse(read(".claude", "settings.json"))).length, 1);
+run("--uninstall");
+
 // Broken settings.json: refuse, change nothing.
 fs.writeFileSync(f(".claude", "settings.json"), "{ not json");
 assert.throws(() => run(), /not valid JSON/);
