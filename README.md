@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/images/hero.jpg" width="100%" alt="Ink-wash landscape: a small figure in a red robe on a cliff looks over a wide valley of mountains, rivers and villages"></p>
+
 <h1 align="center">Dajuguan · Big Picture</h1>
 
 <p align="center">A skill that makes AI assistants solve what you meant, not just what you typed.<br>
@@ -13,6 +15,8 @@ Ask an assistant to "add export, e.g. PDF and Word" and you usually get PDF and 
 
 **Dajuguan** (大局观, "seeing the big picture") is a working method in three steps:
 
+<p align="center"><img src="docs/images/method.jpg" width="80%" alt="Ink-wash: a stone held in a hand, ripples revealing many similar stones, then the stones laid in a complete circle"></p>
+
 ```
 1 Real need        →  2 Widen the view              →  3 Converge
   original intent       kin: the whole family            recommend the complete set
@@ -24,6 +28,8 @@ Ask an assistant to "add export, e.g. PDF and Word" and you usually get PDF and 
 Example: "add export, e.g. PDF and Word" → the intent is "get my notes out of the app in the formats people use". The widened set is PDF, Word, Markdown, HTML, plus batch export and how images and fonts survive. The reply recommends a set and says what it leaves out and why.
 
 ## How it works
+
+<p align="center"><img src="docs/images/layers.jpg" width="80%" alt="Three floating paper layers over misty mountains: quiet mist, a red bell, an open scroll"></p>
 
 A skill alone is not enough. Assistants pick skills by reading their descriptions, and a short request like "…, etc." looks simple, so the skill gets skipped exactly when it matters. This package therefore works in three layers:
 
@@ -210,6 +216,8 @@ It removes the skill, the hook files, the hook entry in `settings.json` and the 
 
 **大局观**是一套三步工作方法：
 
+<p align="center"><img src="docs/images/method.jpg" width="80%" alt="水墨：手里一块石头，涟漪里显出一片同类的石头，最后在岸边摆成完整的一圈"></p>
+
 ```
 1 实际需求          →  2 全局展开                 →  3 收敛
   原始意图              同类：例子所属的整族           推荐完整的一组
@@ -221,6 +229,8 @@ It removes the skill, the hook files, the hook entry in `settings.json` and the 
 你说「1、2、3 等」，最重要的是那个「等」。
 
 ### 原理：为什么光有技能不够
+
+<p align="center"><img src="docs/images/layers.jpg" width="80%" alt="水墨：云山之上浮着三层纸：一层薄雾、一只红铃、一卷展开的卷轴"></p>
 
 AI 按描述自己挑技能。带「等」的一句短话看上去很简单，技能偏偏在最需要的时候被跳过。所以这里分三层：
 
