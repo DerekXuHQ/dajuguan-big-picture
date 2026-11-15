@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import { classify } from "../hooks/dajuguan-trigger.mjs";
 
 const cases = [
+  ["off", "!cd ~/Documents/dajuguan-skill && node install.mjs --dry-run"],
+  ["off", "<bash-input>node install.mjs --lang zh</bash-input>"],
   // 11-15 coverage pass: "etc."-style wording in both languages, including context-sensitive ones.
   ["full", "fix buttons, menus and such"],
   ["full", "fix buttons, menus or similar"],

@@ -56,8 +56,10 @@ const out = execFileSync("/bin/sh", ["-c", cmd], { input: JSON.stringify({ promp
 assert.match(JSON.parse(out).hookSpecificOutput.additionalContext, /dajuguan/);
 
 // Reinstall does not duplicate anything.
-run("--codex");
+const again = run("--codex");
 assert.equal(ours(JSON.parse(read(".codex", "hooks.json"))).length, 1);
+// Nothing changed since the first install: every line says "same".
+assert.ok(!/^\s+(add|update|copy)\s/m.test(again), again);
 s = JSON.parse(read(".claude", "settings.json"));
 assert.equal(ours(s).length, 1);
 assert.equal(read(".claude", "CLAUDE.md").split("dajuguan:begin").length, 2);

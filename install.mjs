@@ -89,6 +89,7 @@ function addHook(file, s) {
   s.hooks.UserPromptSubmit ??= [];
   const groups = s.hooks.UserPromptSubmit;
   const found = groups.some((g) => (g.hooks || []).some(isOurs));
+  if (found && groups.every((g) => (g.hooks || []).every((h) => !isOurs(h) || h.command === HOOK_CMD))) return say("same", file, "dajuguan hook already there");
   for (const g of groups) for (const h of g.hooks || []) if (isOurs(h)) h.command = HOOK_CMD;
   if (!found) groups.push({ hooks: [{ type: "command", command: HOOK_CMD, timeout: 5 }] });
   backup(file);
@@ -129,8 +130,10 @@ function install() {
   // 2. Hook files + hook entries
   if (!has("--no-hook")) {
     for (const f of ["dajuguan-trigger.mjs", "triggers.json"]) {
-      write(path.join(P.hooks, f), fs.readFileSync(path.join(SRC, "hooks", f), "utf8"));
-      say("copy", path.join(P.hooks, f));
+      const src = fs.readFileSync(path.join(SRC, "hooks", f), "utf8"), dst = path.join(P.hooks, f);
+      if (fs.existsSync(dst) && fs.readFileSync(dst, "utf8") === src) { say("same", dst); continue; }
+      say(fs.existsSync(dst) ? "update" : "copy", dst);
+      write(dst, src);
     }
     addHook(P.settings, settings);
     if (codex) addHook(P.codexHooks, codexHooks);
@@ -139,8 +142,10 @@ function install() {
   if (!has("--no-rule")) {
     for (const file of [P.claudeMd, ...(codex ? [P.agentsMd] : [])]) {
       const before = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+      const after = withBlock(before, rule());
+      if (after === before) { say("same", file, "rule already there"); continue; }
       backup(file);
-      write(file, withBlock(before, rule()));
+      write(file, after);
       say(before.includes(BEGIN) ? "update" : "add", file, "rule between dajuguan markers");
     }
   }

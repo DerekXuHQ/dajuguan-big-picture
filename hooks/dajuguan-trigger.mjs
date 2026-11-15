@@ -53,6 +53,8 @@ export function classify(prompt) {
   const text = ownWords(String(prompt || ""));
   if (/^\s*\/dajuguan\b/i.test(text)) return { mode: "full", why: "asked for it: /dajuguan" };
   if (!text.trim() || /^\s*\//.test(text)) return { mode: "off", why: "empty or slash command" };
+  // A shell command typed in bash mode ("!git status", or wrapped in <bash-input>) is not a request.
+  if (/^\s*!/.test(text) || /<bash-(input|stdout|stderr)>/.test(text)) return { mode: "off", why: "shell command" };
   // Naming the method anywhere ("…用大局观", "big picture please") is an explicit request: beats a fixed scope.
   const named = EXPLICIT.find((t) => t.re.test(text));
   if (named) return { mode: "full", why: `asked for it: "${named.p}"` };
