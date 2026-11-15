@@ -1,0 +1,15 @@
+{
+  "name": "dajuguan-big-picture",
+  "description": "Dajuguan · Big Picture: a working method that solves the intent behind a request (bilingual skill + always-on rule + trigger hook).",
+  "owner": {
+    "name": "DerekXuHQ",
+    "url": "https://github.com/DerekXuHQ"
+  },
+  "plugins": [
+    {
+      "name": "dajuguan",
+      "source": "./",
+      "description": "Big picture (大局观): solve the intent behind a request, not just its literal words. One bilingual skill (English + 中文), an always-on rule, and a hook that switches it on when you write etc., e.g., such as, 等, 比如, 类似 …"
+    }
+  ]
+}

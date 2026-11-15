@@ -1,0 +1,20 @@
+{
+  "name": "dajuguan-big-picture",
+  "interface": {
+    "displayName": "Dajuguan · Big Picture"
+  },
+  "plugins": [
+    {
+      "name": "dajuguan",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "description": "dajuguan: the always-on rule at session start, and the trigger check on every message",
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dajuguan-rule.mjs\"", "timeout": 5 } ] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dajuguan-trigger.mjs\"", "timeout": 5 } ] }
+    ]
+  }
+}

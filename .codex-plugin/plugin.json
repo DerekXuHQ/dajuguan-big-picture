@@ -1,0 +1,19 @@
+{
+  "name": "dajuguan",
+  "version": "1.2.0",
+  "description": "Big picture (大局观): solve the intent behind a request, not just its literal words. One bilingual skill (English + 中文), an always-on rule, and a hook that switches it on when you write etc., e.g., such as, 等, 比如, 类似 …",
+  "author": {
+    "name": "DerekXuHQ",
+    "url": "https://github.com/DerekXuHQ"
+  },
+  "homepage": "https://github.com/DerekXuHQ/dajuguan-big-picture",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Dajuguan · Big Picture",
+    "shortDescription": "Solve the intent, not the literal words",
+    "developerName": "DerekXuHQ",
+    "category": "Productivity",
+    "websiteURL": "https://github.com/DerekXuHQ/dajuguan-big-picture"
+  }
+}

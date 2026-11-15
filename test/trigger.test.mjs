@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import { classify } from "../hooks/dajuguan-trigger.mjs";
 
 const cases = [
+  ["off", "<task-notification>\n<result>covers skills, hooks and similar</result>\n</task-notification>"],
+  ["off", "<system-reminder>examples such as these</system-reminder>"],
   ["off", "!cd ~/Documents/dajuguan-skill && node install.mjs --dry-run"],
   ["off", "<bash-input>node install.mjs --lang zh</bash-input>"],
   // 11-15 coverage pass: "etc."-style wording in both languages, including context-sensitive ones.

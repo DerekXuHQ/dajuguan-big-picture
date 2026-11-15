@@ -46,6 +46,8 @@ function ownWords(prompt) {
   return prompt
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/<pasted_content[\s\S]*?<\/pasted_content[^>]*>/g, " ")
+    // System text that arrives through the same hook is not the user's words either.
+    .replace(/<(system-reminder|task-notification|local-command-stdout|command-stdout|bash-stdout|bash-stderr)\b[\s\S]*?<\/\1>/g, " ")
     .split("\n").filter((l) => !/^\s*>/.test(l)).join("\n");
 }
 

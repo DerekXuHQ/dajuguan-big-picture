@@ -63,6 +63,10 @@ A skill alone is not enough. Assistants pick skills by reading their description
 skills/dajuguan/SKILL.md      the skill: English first, then Chinese, same content
 hooks/dajuguan-trigger.mjs    the trigger hook (Node.js, no dependencies)
 hooks/triggers.json           trigger phrases and thresholds
+hooks/dajuguan-rule.mjs       plugin installs: adds the always-on rule at session start
+hooks/hooks.json              plugin installs: wires both hooks (Claude Code and Codex)
+.claude-plugin/               Claude Code plugin + marketplace manifests
+.codex-plugin/, .agents/      Codex plugin + marketplace manifests
 always-on.md                  the always-on rule: English first, then Chinese
 install.mjs                   installer / uninstaller
 test/                         trigger tests (real phrasings) + installer tests (throwaway home folder)
@@ -86,7 +90,31 @@ Requirements: [Claude Code](https://code.claude.com) and/or Codex CLI, and Node.
 
 ## Install
 
-### A. Script (recommended)
+### A. As a plugin (recommended: you get updates)
+
+The repository is a plugin marketplace for both Claude Code and Codex. A plugin install brings all three layers — the skill, the trigger hook, and the always-on rule (added at the start of each session by a hook, so it updates too) — and touches none of your own files.
+
+**Claude Code**
+
+```bash
+claude plugin marketplace add DerekXuHQ/dajuguan-big-picture
+claude plugin install dajuguan@dajuguan-big-picture
+```
+
+Or inside a session: `/plugin marketplace add DerekXuHQ/dajuguan-big-picture`, then `/plugin install dajuguan@dajuguan-big-picture`. The skill appears as `/dajuguan:dajuguan`.
+
+**Codex**
+
+```bash
+codex plugin marketplace add DerekXuHQ/dajuguan-big-picture
+codex plugin add dajuguan@dajuguan-big-picture
+```
+
+Then open `/hooks` in Codex once and trust the two dajuguan hooks.
+
+Use the plugin **or** the script below, not both: both at once would run the hook twice. To switch from the script to the plugin, run `node install.mjs --uninstall` first.
+
+### B. Script
 
 ```bash
 git clone https://github.com/DerekXuHQ/dajuguan-big-picture.git
@@ -100,7 +128,7 @@ Options: `--no-skill` (you already have the skill from elsewhere) · `--no-hook`
 
 Then start a new Claude Code session and type something like "add export, e.g. PDF and Word". The reply should start with `[Big picture · …]`. In Codex, open `/hooks` once and trust the dajuguan hook: Codex does not run a new hook until you do.
 
-### B. By hand
+### C. By hand
 
 1. Copy the skill folder: `skills/dajuguan` → `~/.claude/skills/dajuguan` (Codex: `~/.codex/skills/dajuguan`).
 2. Copy `hooks/dajuguan-trigger.mjs` and `hooks/triggers.json` → `~/.claude/dajuguan/hooks/`.
@@ -120,7 +148,7 @@ Then start a new Claude Code session and type something like "add export, e.g. P
 4. Paste the rule block from [`always-on.md`](always-on.md) into `~/.claude/CLAUDE.md` (Codex: `~/.codex/AGENTS.md`).
 5. Start a new session, or run `/hooks` to check that the hook is listed.
 
-### C. Other assistants
+### D. Other assistants
 
 | Assistant | What to do |
 |---|---|
@@ -131,6 +159,17 @@ Then start a new Claude Code session and type something like "add export, e.g. P
 
 Only Claude Code and Codex run the trigger hook. Everywhere else, the always-on rule does the job.
 
+## Updates
+
+| How you installed | How updates reach you |
+|---|---|
+| Claude Code plugin | Turn on auto-update once: `/plugin` → **Marketplaces** → `dajuguan-big-picture` → **Enable auto-update** (third-party marketplaces start with it off). Claude Code then checks in the background during a session, installs the new version and shows "Plugin updated · Run /reload-plugins to apply". Without auto-update: `claude plugin marketplace update dajuguan-big-picture` then `claude plugin update dajuguan@dajuguan-big-picture`. |
+| Codex plugin | `codex plugin marketplace upgrade dajuguan-big-picture` (Codex has no auto-update for added marketplaces). |
+| Script | `git pull` in your clone, then `node install.mjs` again. Lines marked `same` were already current. |
+| Claude.ai, ChatGPT, other web chats | Re-upload `SKILL.md` and re-paste the rule. Nothing updates these by itself. |
+
+To be told when there is a new version: on GitHub, **Watch → Custom → Releases** on this repository. Every update is published as a release with notes.
+
 ## Check that it works
 
 ```bash
@@ -140,6 +179,10 @@ npm test                                                                        
 ```
 
 ## Uninstall
+
+Plugin: `claude plugin uninstall dajuguan@dajuguan-big-picture` (Claude Code) or `codex plugin remove dajuguan@dajuguan-big-picture` (Codex). Nothing else to clean up.
+
+Script:
 
 ```bash
 node install.mjs --uninstall
@@ -229,7 +272,31 @@ AI 按描述自己挑技能。带「等」的一句短话看上去很简单，�
 
 ### 安装
 
-**A. 脚本安装（推荐）**
+**A. 作为插件安装（推荐：能收到更新）**
+
+这个仓库本身就是 Claude Code 和 Codex 的插件市场。插件装上就是三层齐全：技能、触发钩子、常驻规则（会话开始时由钩子加进去，所以也会跟着更新），而且不改你自己的任何文件。
+
+Claude Code：
+
+```bash
+claude plugin marketplace add DerekXuHQ/dajuguan-big-picture
+claude plugin install dajuguan@dajuguan-big-picture
+```
+
+也可以在会话里输入 `/plugin marketplace add DerekXuHQ/dajuguan-big-picture`，再 `/plugin install dajuguan@dajuguan-big-picture`。技能的名字是 `/dajuguan:dajuguan`。
+
+Codex：
+
+```bash
+codex plugin marketplace add DerekXuHQ/dajuguan-big-picture
+codex plugin add dajuguan@dajuguan-big-picture
+```
+
+然后在 Codex 里打开一次 `/hooks`，信任大局观的两个钩子。
+
+插件和下面的脚本**二选一**，两个都装钩子会跑两遍。从脚本换成插件，先运行 `node install.mjs --uninstall`。
+
+**B. 脚本安装**
 
 ```bash
 git clone https://github.com/DerekXuHQ/dajuguan-big-picture.git
@@ -243,7 +310,7 @@ node install.mjs --codex        # Claude Code 和 Codex 都装
 
 装好后开一个新的 Claude Code 会话，试一句「加个导出功能，比如 PDF 和 Word」，回复开头应该是【大局观 · …】。Codex 要先在 `/hooks` 里信任一次大局观钩子，否则它不会跑新钩子。
 
-**B. 手动安装**
+**C. 手动安装**
 
 1. 把 `skills/dajuguan` 整个文件夹复制到 `~/.claude/skills/dajuguan`（Codex：`~/.codex/skills/dajuguan`）。
 2. 把 `hooks/dajuguan-trigger.mjs` 和 `hooks/triggers.json` 复制到 `~/.claude/dajuguan/hooks/`。
@@ -251,7 +318,7 @@ node install.mjs --codex        # Claude Code 和 Codex 都装
 4. 把 [`always-on.md`](always-on.md) 里的规则整段贴进 `~/.claude/CLAUDE.md`（Codex：`~/.codex/AGENTS.md`）。
 5. 开新会话，或者输入 `/hooks` 看钩子是否在列表里。
 
-**C. 其他 AI**
+**D. 其他 AI**
 
 | 工具 | 做法 |
 |---|---|
@@ -262,6 +329,17 @@ node install.mjs --codex        # Claude Code 和 Codex 都装
 
 只有 Claude Code 和 Codex 会跑触发钩子，其他地方靠常驻规则。
 
+### 更新
+
+| 怎么装的 | 怎么拿到更新 |
+|---|---|
+| Claude Code 插件 | 打开一次自动更新：`/plugin` → **Marketplaces** → `dajuguan-big-picture` → **Enable auto-update**（第三方市场默认是关的）。之后 Claude Code 会在会话进行中后台检查，装好新版并提示「Plugin updated · Run /reload-plugins to apply」。不开自动更新的话，手动运行 `claude plugin marketplace update dajuguan-big-picture`，再 `claude plugin update dajuguan@dajuguan-big-picture`。 |
+| Codex 插件 | `codex plugin marketplace upgrade dajuguan-big-picture`（Codex 对自己添加的市场没有自动更新）。 |
+| 脚本 | 在克隆的目录里 `git pull`，再运行一次 `node install.mjs`。显示 `same` 的项表示已经是最新。 |
+| Claude 网页版、ChatGPT 等 | 重新上传 `SKILL.md`、重新粘贴规则，这些地方不会自己更新。 |
+
+想在出新版时收到通知：在 GitHub 上对这个仓库点 **Watch → Custom → Releases**。每次更新都会发一个带说明的 Release。
+
 ### 检查是否生效
 
 ```bash
@@ -270,6 +348,10 @@ echo '{"prompt":"好的"}' | node ~/.claude/dajuguan/hooks/dajuguan-trigger.mjs 
 ```
 
 ### 卸载
+
+插件：`claude plugin uninstall dajuguan@dajuguan-big-picture`（Claude Code）或 `codex plugin remove dajuguan@dajuguan-big-picture`（Codex），不用再清理别的。
+
+脚本：
 
 ```bash
 node install.mjs --uninstall
