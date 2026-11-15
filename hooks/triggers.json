@@ -141,5 +141,15 @@
   "complex": {
     "minChars": 400,
     "minListItems": 3
-  }
+  },
+  "explicit": [
+    "大局观",
+    "大局",
+    "全局观",
+    "用全局",
+    "dajuguan",
+    "big picture",
+    "big-picture",
+    "whole picture"
+  ]
 }

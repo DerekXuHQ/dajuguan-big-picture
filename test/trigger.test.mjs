@@ -25,6 +25,12 @@ const cases = [
   // full: big or multi-part, no trigger words
   ["full", "1. rename the repo\n2. build four versions\n3. publish the skill"],
   ["full", "x".repeat(450)],
+  // full: the user names the method anywhere
+  ["full", "把这个按钮改成蓝色，大局观"],
+  ["full", "用大局观看一下这个方案"],
+  ["full", "只改这一处，但用大局观想想还会影响哪"],
+  ["full", "rename the button — big picture please"],
+  ["full", "/dajuguan 看看发布流程"],
   // off: scope fixed wins over triggers
   ["off", "只改这一处，比如这个按钮的颜色"],
   ["off", "Only this: fix the typo in the title, e.g. 'Teh'"],

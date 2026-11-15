@@ -36,6 +36,7 @@ function personal() {
 
 const TRIGGERS = compile([...Object.values(T.triggers).flat(), ...personal()]);
 const SCOPE_FIXED = compile(T.scopeFixed);
+const EXPLICIT = compile(T.explicit);
 // 等 alone means "etc." only in a list ("A、B、C 等"), not in 等待 / 等一下 / 平等 / 等级 …
 const DENG = new RegExp(`(?<![${T.deng.notAfter}])等(?![${T.deng.notBefore}])`);
 
@@ -49,7 +50,11 @@ function ownWords(prompt) {
 
 export function classify(prompt) {
   const text = ownWords(String(prompt || ""));
+  if (/^\s*\/dajuguan\b/i.test(text)) return { mode: "full", why: "asked for it: /dajuguan" };
   if (!text.trim() || /^\s*\//.test(text)) return { mode: "off", why: "empty or slash command" };
+  // Naming the method anywhere ("…用大局观", "big picture please") is an explicit request: beats a fixed scope.
+  const named = EXPLICIT.find((t) => t.re.test(text));
+  if (named) return { mode: "full", why: `asked for it: "${named.p}"` };
   const fixed = SCOPE_FIXED.find((t) => t.re.test(text));
   if (fixed) return { mode: "off", why: `scope fixed: "${fixed.p}"` };
   const hit = TRIGGERS.find((t) => t.re.test(text));
