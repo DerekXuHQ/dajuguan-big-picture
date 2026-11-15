@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// dajuguan auto-trigger: a Claude Code UserPromptSubmit hook.
+// dajuguan auto-trigger: a UserPromptSubmit hook for Claude Code and Codex (same format in both).
 //
 // Reads the hook event (JSON) on stdin. If the prompt contains a trigger phrase, or looks big
-// enough to need the whole view, it prints a short instruction that Claude Code adds to the
+// enough to need the whole view, it prints a short instruction that the assistant adds to the
 // context for this turn, so the dajuguan skill is used every time — not only when the model
 // happens to pick it. Prints nothing (no extra context, no cost) otherwise.
 //
@@ -35,6 +35,7 @@ function personal() {
 }
 
 const TRIGGERS = compile([...Object.values(T.triggers).flat(), ...personal()]);
+const PATTERNS = Object.entries(T.patterns || {}).filter(([k]) => !k.startsWith("_")).map(([p, re]) => ({ p, re: new RegExp(re, "i") }));
 const SCOPE_FIXED = compile(T.scopeFixed);
 const EXPLICIT = compile(T.explicit);
 // 等 alone means "etc." only in a list ("A、B、C 等"), not in 等待 / 等一下 / 平等 / 等级 …
@@ -57,7 +58,7 @@ export function classify(prompt) {
   if (named) return { mode: "full", why: `asked for it: "${named.p}"` };
   const fixed = SCOPE_FIXED.find((t) => t.re.test(text));
   if (fixed) return { mode: "off", why: `scope fixed: "${fixed.p}"` };
-  const hit = TRIGGERS.find((t) => t.re.test(text));
+  const hit = TRIGGERS.find((t) => t.re.test(text)) || PATTERNS.find((t) => t.re.test(text));
   if (hit) return { mode: "full", why: `trigger phrase "${hit.p}"` };
   if (DENG.test(text)) return { mode: "full", why: "trigger phrase \"等\"" };
   const items = text.split("\n").filter((l) => /^\s*(\d+[.)、]|[-*•]|[一二三四五六七八九十]+、)/.test(l)).length;
@@ -72,7 +73,7 @@ const MESSAGE = {
     `[dajuguan] Big-picture FULL mode for this request (${why}). Use the dajuguan skill: ` +
     `1) write the original intent + success criterion; 2) widen on kin, impact, options, failure modes — ` +
     `examples are samples, not the scope; 3) converge on a recommended complete set, sorted into do / propose / drop. ` +
-    `Start the reply with a marker line [Big picture · …] (Chinese replies: 【大局观 · …】).`,
+    `Reply in the user's language, and start the reply with a marker line [Big picture · …] (Chinese replies: 【大局观 · …】).`,
 };
 
 async function main() {

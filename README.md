@@ -30,8 +30,19 @@ A skill alone is not enough. Assistants pick skills by reading their description
 | Layer | What it is | When it acts | Cost |
 |---|---|---|---|
 | 1 Always-on rule | 5 lines in `CLAUDE.md`, `AGENTS.md` or ChatGPT custom instructions ([`always-on.md`](always-on.md)) | Every turn; the model judges intent even without trigger words | ~150 tokens per turn |
-| 2 Trigger hook | A Claude Code `UserPromptSubmit` hook ([`hooks/`](hooks/)) that runs before the model sees your message | Deterministic: on a match it adds one instruction to that turn | Nothing when it doesn't match |
-| 3 The skill | The full method ([`skills/dajuguan/SKILL.md`](skills/dajuguan/SKILL.md), Chinese: [`zh/skills/dajuguan/SKILL.md`](zh/skills/dajuguan/SKILL.md)) | Loaded when the hook or the model calls for it | Only when used |
+| 2 Trigger hook | A `UserPromptSubmit` hook ([`hooks/`](hooks/)) for Claude Code and Codex, which run it before the model sees your message | Deterministic: on a match it adds one instruction to that turn | Nothing when it doesn't match |
+| 3 The skill | The full method, one file: [`skills/dajuguan/SKILL.md`](skills/dajuguan/SKILL.md) | Loaded when the hook or the model calls for it | Only when used |
+
+**Languages.** The skill and the rule are each one file holding the same text twice: English first, then Chinese. A short note at the top tells the assistant to read the half in your language and reply in that language, so English and Chinese users install the same thing and nothing has to be chosen.
+
+**Which assistant gets which layer**
+
+| Assistant | Rule | Hook | Skill |
+|---|---|---|---|
+| Claude Code | `~/.claude/CLAUDE.md` | yes | `~/.claude/skills/` |
+| Codex CLI | `~/.codex/AGENTS.md` | yes (trust it once in Codex's `/hooks`) | `~/.codex/skills/` |
+| Cursor, Windsurf, other agents | their rules file | no | keep `SKILL.md` in the project |
+| ChatGPT, Claude.ai and other web chats | custom instructions | no | upload `SKILL.md` (Claude.ai: as a skill; ChatGPT: Project files) |
 
 **What the hook reacts to** (lists in [`hooks/triggers.json`](hooks/triggers.json)):
 
@@ -49,11 +60,10 @@ A skill alone is not enough. Assistants pick skills by reading their description
 ## What's in this repo
 
 ```
-skills/dajuguan/SKILL.md      the skill, English
-zh/skills/dajuguan/SKILL.md   the skill, Chinese
+skills/dajuguan/SKILL.md      the skill: English first, then Chinese, same content
 hooks/dajuguan-trigger.mjs    the trigger hook (Node.js, no dependencies)
 hooks/triggers.json           trigger phrases and thresholds
-always-on.md                  the 5-line always-on rule, English + Chinese
+always-on.md                  the always-on rule: English first, then Chinese
 install.mjs                   installer / uninstaller
 test/                         trigger tests (real phrasings) + installer tests (throwaway home folder)
 ```
@@ -62,15 +72,17 @@ test/                         trigger tests (real phrasings) + installer tests (
 
 | Where | What | Added by |
 |---|---|---|
-| `~/.claude/skills/dajuguan/SKILL.md` | The skill (English or Chinese) | default; skip with `--no-skill` |
+| `~/.claude/skills/dajuguan/SKILL.md` | The skill (English + Chinese in one file) | default; skip with `--no-skill` |
 | `~/.claude/dajuguan/hooks/` | The hook script and `triggers.json` | default; skip with `--no-hook` |
 | `~/.claude/settings.json` | One `UserPromptSubmit` entry pointing at the hook. Merged in: your other settings and hooks stay | default; skip with `--no-hook` |
 | `~/.claude/CLAUDE.md` | The always-on rule, between `<!-- dajuguan:begin -->` and `<!-- dajuguan:end -->` | default; skip with `--no-rule` |
-| `~/.codex/AGENTS.md` | Same rule, for Codex | only with `--codex` |
+| `~/.codex/skills/dajuguan/SKILL.md` | The same skill, for Codex | only with `--codex` (and not with `--no-skill`) |
+| `~/.codex/hooks.json` | The same hook entry, for Codex. Merged in like `settings.json` | only with `--codex` (and not with `--no-hook`) |
+| `~/.codex/AGENTS.md` | The same rule, for Codex | only with `--codex` (and not with `--no-rule`) |
 | `~/.claude/dajuguan/backup/<time>/` | A copy of every file above as it was before it changed | automatic |
 | `~/.claude/dajuguan/my-triggers.txt` | Your own trigger phrases, one per line (optional; you create it) | you |
 
-Requirements: [Claude Code](https://code.claude.com) and Node.js 18 or later. The hook makes no network requests and writes no files; it reads your message and prints at most one line.
+Requirements: [Claude Code](https://code.claude.com) and/or Codex CLI, and Node.js 18 or later. Codex uses the hook files under `~/.claude/dajuguan/hooks/` too. The hook makes no network requests and writes no files; it reads your message and prints at most one line.
 
 ## Install
 
@@ -80,16 +92,17 @@ Requirements: [Claude Code](https://code.claude.com) and Node.js 18 or later. Th
 git clone https://github.com/DerekXuHQ/dajuguan-big-picture.git
 cd dajuguan-big-picture
 node install.mjs --dry-run      # see exactly what will change; changes nothing
-node install.mjs                # English skill;  Chinese: node install.mjs --lang zh
+node install.mjs                # Claude Code
+node install.mjs --codex        # Claude Code and Codex
 ```
 
-Options: `--lang zh` · `--no-skill` (you already have the skill from elsewhere) · `--no-hook` · `--no-rule` · `--codex`. Running it again updates in place and never duplicates anything. On Windows, run the same commands in PowerShell.
+Options: `--no-skill` (you already have the skill from elsewhere) · `--no-hook` · `--no-rule` · `--codex`. Running it again updates in place and never duplicates anything. On Windows, run the same commands in PowerShell.
 
-Then start a new Claude Code session and type something like "add export, e.g. PDF and Word". The reply should start with `[Big picture · …]`.
+Then start a new Claude Code session and type something like "add export, e.g. PDF and Word". The reply should start with `[Big picture · …]`. In Codex, open `/hooks` once and trust the dajuguan hook: Codex does not run a new hook until you do.
 
 ### B. By hand
 
-1. Copy the skill folder: `skills/dajuguan` (or `zh/skills/dajuguan`) → `~/.claude/skills/dajuguan`.
+1. Copy the skill folder: `skills/dajuguan` → `~/.claude/skills/dajuguan` (Codex: `~/.codex/skills/dajuguan`).
 2. Copy `hooks/dajuguan-trigger.mjs` and `hooks/triggers.json` → `~/.claude/dajuguan/hooks/`.
 3. Add the hook to `~/.claude/settings.json`. If the file already has a `"hooks"` section, add only the `UserPromptSubmit` part into it:
 
@@ -103,19 +116,20 @@ Then start a new Claude Code session and type something like "add export, e.g. P
    }
    ```
 
-   If Claude Code can't find `node` (common when it is started from the Dock), use the full path from `which node`.
-4. Paste one of the two rules from [`always-on.md`](always-on.md) into `~/.claude/CLAUDE.md`.
+   If Claude Code can't find `node` (common when it is started from the Dock), use the full path from `which node`. Codex: the same JSON goes in `~/.codex/hooks.json`; then trust it in Codex's `/hooks`.
+4. Paste the rule block from [`always-on.md`](always-on.md) into `~/.claude/CLAUDE.md` (Codex: `~/.codex/AGENTS.md`).
 5. Start a new session, or run `/hooks` to check that the hook is listed.
 
 ### C. Other assistants
 
 | Assistant | What to do |
 |---|---|
-| Codex CLI | `node install.mjs --codex`, or paste the rule from `always-on.md` into `~/.codex/AGENTS.md` |
+| Codex CLI | `node install.mjs --codex` installs all three layers (see the table above) |
 | Cursor, Windsurf, other agents | Paste the rule into the agent's rules file; keep `SKILL.md` in the project for it to read |
-| ChatGPT, Claude.ai and other web chats | Paste the rule into custom instructions (ChatGPT: Settings → Personalization). For the full method, upload `SKILL.md` to a Project's files |
+| Claude.ai | Upload the `skills/dajuguan` folder as a skill (zip it first), and paste the rule into your profile preferences |
+| ChatGPT and other web chats | Paste the rule into custom instructions (ChatGPT: Settings → Personalization). For the full method, upload `SKILL.md` to a Project's files |
 
-Only Claude Code runs the trigger hook. Everywhere else, the always-on rule does the job.
+Only Claude Code and Codex run the trigger hook. Everywhere else, the always-on rule does the job.
 
 ## Check that it works
 
@@ -170,8 +184,19 @@ AI 按描述自己挑技能。带「等」的一句短话看上去很简单，�
 | 层 | 是什么 | 何时起作用 | 开销 |
 |---|---|---|---|
 | 1 常驻规则 | 五行，放进 `CLAUDE.md`、`AGENTS.md` 或 ChatGPT 自定义指令（[`always-on.md`](always-on.md)） | 每一轮；没有触发词也按意图判断 | 每轮约 150 token |
-| 2 触发钩子 | Claude Code 的 `UserPromptSubmit` 钩子，在模型看到你的话之前先跑 | 确定性的：命中就在这一轮加一句指令 | 不命中零开销 |
-| 3 技能本体 | 完整方法（中文版 [`zh/skills/dajuguan/SKILL.md`](zh/skills/dajuguan/SKILL.md)） | 钩子或模型需要时才加载 | 只在用时 |
+| 2 触发钩子 | `UserPromptSubmit` 钩子，Claude Code 和 Codex 都会在模型看到你的话之前先跑它 | 确定性的：命中就在这一轮加一句指令 | 不命中零开销 |
+| 3 技能本体 | 完整方法，一个文件：[`skills/dajuguan/SKILL.md`](skills/dajuguan/SKILL.md) | 钩子或模型需要时才加载 | 只在用时 |
+
+**语言**：技能和规则各是一个文件，同一份内容写两遍，上半英文、下半中文。文件开头有一句说明，让 AI 读和你同语言的那一半、用你的语言回复。所以中英文用户装的是同一个东西，不用选。
+
+**哪个 AI 用得上哪一层**
+
+| AI | 常驻规则 | 钩子 | 技能 |
+|---|---|---|---|
+| Claude Code | `~/.claude/CLAUDE.md` | 有 | `~/.claude/skills/` |
+| Codex 命令行 | `~/.codex/AGENTS.md` | 有（第一次要在 Codex 的 `/hooks` 里点信任） | `~/.codex/skills/` |
+| Cursor、Windsurf 等 | 它的规则文件 | 没有 | 把 `SKILL.md` 放在项目里 |
+| ChatGPT、Claude 网页版等 | 自定义指令 | 没有 | 上传 `SKILL.md`（Claude 网页版作为技能上传；ChatGPT 放项目文件） |
 
 **钩子认哪些**：
 
@@ -190,15 +215,17 @@ AI 按描述自己挑技能。带「等」的一句短话看上去很简单，�
 
 | 位置 | 内容 | 什么时候装 |
 |---|---|---|
-| `~/.claude/skills/dajuguan/SKILL.md` | 技能（中文或英文） | 默认装；`--no-skill` 跳过 |
+| `~/.claude/skills/dajuguan/SKILL.md` | 技能（中英文在同一个文件里） | 默认装；`--no-skill` 跳过 |
 | `~/.claude/dajuguan/hooks/` | 钩子脚本和 `triggers.json` | 默认装；`--no-hook` 跳过 |
 | `~/.claude/settings.json` | 加一条 `UserPromptSubmit` 钩子。是合并进去的，你原有的设置和钩子都不动 | 默认装；`--no-hook` 跳过 |
 | `~/.claude/CLAUDE.md` | 常驻规则，夹在 `<!-- dajuguan:begin -->` 和 `<!-- dajuguan:end -->` 之间 | 默认装；`--no-rule` 跳过 |
+| `~/.codex/skills/dajuguan/SKILL.md` | 同一个技能，给 Codex 用 | 只有加 `--codex` 才装 |
+| `~/.codex/hooks.json` | 同一条钩子，给 Codex 用，和 `settings.json` 一样是合并进去的 | 只有加 `--codex` 才装 |
 | `~/.codex/AGENTS.md` | 同一条规则，给 Codex 用 | 只有加 `--codex` 才装 |
 | `~/.claude/dajuguan/backup/<时间>/` | 上面每个文件改动前的备份 | 自动 |
 | `~/.claude/dajuguan/my-triggers.txt` | 你自己的触发词，一行一个（可选，你自己建） | 你 |
 
-需要：[Claude Code](https://code.claude.com) 和 Node.js 18 以上。钩子不联网、不写文件，只读你这条消息，最多输出一行。
+需要：[Claude Code](https://code.claude.com) 或 Codex 命令行（或两个都有），以及 Node.js 18 以上。Codex 也用 `~/.claude/dajuguan/hooks/` 下的钩子文件。钩子不联网、不写文件，只读你这条消息，最多输出一行。
 
 ### 安装
 
@@ -208,30 +235,32 @@ AI 按描述自己挑技能。带「等」的一句短话看上去很简单，�
 git clone https://github.com/DerekXuHQ/dajuguan-big-picture.git
 cd dajuguan-big-picture
 node install.mjs --dry-run      # 先看会改哪些地方，什么都不改
-node install.mjs --lang zh      # 中文技能；英文版去掉 --lang zh
+node install.mjs                # 装给 Claude Code
+node install.mjs --codex        # Claude Code 和 Codex 都装
 ```
 
-可选参数：`--lang zh`、`--no-skill`（技能已经从别处装过）、`--no-hook`、`--no-rule`、`--codex`。重复运行只会原地更新，不会重复添加。Windows 在 PowerShell 里跑同样的命令。
+可选参数：`--no-skill`（技能已经从别处装过）、`--no-hook`、`--no-rule`、`--codex`。重复运行只会原地更新，不会重复添加。Windows 在 PowerShell 里跑同样的命令。
 
-装好后开一个新的 Claude Code 会话，试一句「加个导出功能，比如 PDF 和 Word」，回复开头应该是【大局观 · …】。
+装好后开一个新的 Claude Code 会话，试一句「加个导出功能，比如 PDF 和 Word」，回复开头应该是【大局观 · …】。Codex 要先在 `/hooks` 里信任一次大局观钩子，否则它不会跑新钩子。
 
 **B. 手动安装**
 
-1. 把 `zh/skills/dajuguan`（英文版是 `skills/dajuguan`）整个文件夹复制到 `~/.claude/skills/dajuguan`。
+1. 把 `skills/dajuguan` 整个文件夹复制到 `~/.claude/skills/dajuguan`（Codex：`~/.codex/skills/dajuguan`）。
 2. 把 `hooks/dajuguan-trigger.mjs` 和 `hooks/triggers.json` 复制到 `~/.claude/dajuguan/hooks/`。
-3. 在 `~/.claude/settings.json` 里加上钩子（JSON 见上面英文部分第 3 步）。文件里已经有 `"hooks"` 的话，只把 `UserPromptSubmit` 那一段加进去。从程序坞启动的 Claude Code 可能找不到 `node`，这时把命令里的 `node` 换成 `which node` 给出的完整路径。
-4. 把 [`always-on.md`](always-on.md) 里的中文规则贴进 `~/.claude/CLAUDE.md`。
+3. 在 `~/.claude/settings.json` 里加上钩子（JSON 见上面英文部分第 3 步）。文件里已经有 `"hooks"` 的话，只把 `UserPromptSubmit` 那一段加进去。从程序坞启动的 Claude Code 可能找不到 `node`，这时把命令里的 `node` 换成 `which node` 给出的完整路径。Codex：同样的 JSON 放进 `~/.codex/hooks.json`，再在 Codex 的 `/hooks` 里信任。
+4. 把 [`always-on.md`](always-on.md) 里的规则整段贴进 `~/.claude/CLAUDE.md`（Codex：`~/.codex/AGENTS.md`）。
 5. 开新会话，或者输入 `/hooks` 看钩子是否在列表里。
 
 **C. 其他 AI**
 
 | 工具 | 做法 |
 |---|---|
-| Codex 命令行 | `node install.mjs --codex`，或把规则贴进 `~/.codex/AGENTS.md` |
+| Codex 命令行 | `node install.mjs --codex`，三层都装（见上面的表） |
 | Cursor、Windsurf 等 | 把规则贴进它的规则文件；把 `SKILL.md` 放在项目里让它读 |
-| ChatGPT、Claude 网页版等 | 把规则贴进自定义指令（ChatGPT：设置 → 个性化）；要完整方法就把 `SKILL.md` 上传到项目文件 |
+| Claude 网页版 | 把 `skills/dajuguan` 文件夹压缩后作为技能上传；规则贴进个人偏好 |
+| ChatGPT 等网页版 | 把规则贴进自定义指令（ChatGPT：设置 → 个性化）；要完整方法就把 `SKILL.md` 上传到项目文件 |
 
-只有 Claude Code 会跑触发钩子，其他地方靠常驻规则。
+只有 Claude Code 和 Codex 会跑触发钩子，其他地方靠常驻规则。
 
 ### 检查是否生效
 

@@ -6,6 +6,29 @@ import { fileURLToPath } from "node:url";
 import { classify } from "../hooks/dajuguan-trigger.mjs";
 
 const cases = [
+  // 11-15 coverage pass: "etc."-style wording in both languages, including context-sensitive ones.
+  ["full", "fix buttons, menus and such"],
+  ["full", "fix buttons, menus or similar"],
+  ["full", "fix things like this"],
+  ["full", "check for something like the language bug"],
+  ["full", "fix screens eg popups"],
+  ["full", "fix screens, like the popup and the sidebar"],
+  ["full", "fix all kinds of glitches"],
+  ["full", "check cases like English turning into Korean"],
+  ["full", "帮我检查一下，类似于啊这种，英文自动变成中文的情况"],
+  ["full", "像这种类似的东西，你得都查一遍"],
+  ["full", "英文变中文、英文变韩文这种情况，修复一下"],
+  ["full", "英文变中文这样的问题都修一下"],
+  ["full", "诸如英文变中文的问题"],
+  ["full", "修一下颜色、字体那些"],
+  ["full", "什么按钮啊菜单啊"],
+  ["full", "按钮、菜单、弹窗…"],
+  ["light", "I like this design"],
+  ["light", "we really like apples and pears"],
+  ["light", "在这种情况下怎么办"],
+  ["light", "我就是这样的人"],
+  ["light", "修一下这个问题"],
+  ["off", "只改这一个按钮的颜色，比如红色"],
   // full: trigger phrases
   ["full", "Add a settings page with theme, font size, etc."],
   ["full", "Support formats such as CSV and JSON"],
