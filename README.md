@@ -29,7 +29,9 @@ Skills are picked by the model, from their description. In practice a skill like
 | 2 Trigger hook | A Claude Code `UserPromptSubmit` hook ([`hooks/`](hooks/)) that detects trigger phrases (English, Chinese, more) and long or multi-part requests | Deterministic: when a trigger matches, the instruction is injected for that turn | 0 tokens when nothing matches |
 | 3 The skill | The full method ([`skills/dajuguan/SKILL.md`](skills/dajuguan/SKILL.md)) | Loaded on demand when the hook or the model calls for it | Only when used |
 
-The hook skips: slash commands, code blocks and quoted text you pasted (that's material, not your words), and requests where you fix the scope ("only this", "只改这一处"). In Chinese, 等 counts only when it means "etc." (A、B、C 等), not 等一下, 平等 or 等级.
+**Ask for it by name**: type `/dajuguan`, or just put "big picture" (or 大局观, 用大局观) anywhere in your message — it always turns full mode on, even with "only this".
+
+The hook skips: other slash commands, code blocks and quoted text you pasted (that's material, not your words), and requests where you fix the scope ("only this", "只改这一处"). In Chinese, 等 counts only when it means "etc." (A、B、C 等), not 等一下, 平等 or 等级.
 
 ## Install
 
@@ -94,6 +96,8 @@ The test cases are real phrasings, including false-positive traps (等一下, "I
 | 2 触发钩子 | Claude Code 的 `UserPromptSubmit` 钩子，识别中英文等触发词和长请求、多部分请求 | 确定性的：一命中就在这一轮注入指令；不命中零开销 |
 | 3 技能本体 | 完整方法，中文版在 [`zh/skills/dajuguan/SKILL.md`](zh/skills/dajuguan/SKILL.md) | 需要时才加载 |
 
-钩子不会被这些触发：斜杠命令、你粘贴的代码块和引用（那是材料，不是你的话）、你限定了范围的请求（「只改这一处」）。中文的「等」只在表示列举时算（A、B、C 等），等一下、平等、等级都不算。
+**点名就用**：输入 `/dajuguan`，或者在话里任何位置带上「大局观」「用大局观」，一定走完整模式，哪怕同时说了「只改这一处」。
+
+钩子不会被这些触发：其他斜杠命令、你粘贴的代码块和引用（那是材料，不是你的话）、你限定了范围的请求（「只改这一处」）。中文的「等」只在表示列举时算（A、B、C 等），等一下、平等、等级都不算。
 
 安装步骤同上（技能目录换成 `zh/skills/dajuguan`）。自己的口头禅可以一行一个写进 `~/.claude/dajuguan/my-triggers.txt`。
