@@ -87,4 +87,7 @@ async function main() {
   }));
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) main();
+// Run when executed directly (not when imported by the tests). Compare real paths: the install
+// location may sit behind a symlink.
+const real = (p) => { try { return fs.realpathSync(p); } catch { return p; } };
+if (process.argv[1] && real(fileURLToPath(import.meta.url)) === real(path.resolve(process.argv[1]))) main();

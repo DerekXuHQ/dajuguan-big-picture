@@ -5,5 +5,11 @@
   "type": "module",
   "license": "MIT",
   "private": true,
-  "scripts": { "test": "node test/trigger.test.mjs" }
+  "scripts": {
+    "test": "node test/trigger.test.mjs && node test/install.test.mjs",
+    "install-skill": "node install.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }
