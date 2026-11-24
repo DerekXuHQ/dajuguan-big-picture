@@ -28,7 +28,7 @@ Three habits run through all of it: **one example → the whole class** (sample 
 
 - **Full mode** (required): run all three steps. Open the reply with the three columns, 12 lines at most, one line per item: a marker line such as `[Big picture · …]` / `【大局观 · …】`, then **Do now · Propose first · Drop (why)**; the analysis comes after. Required when ANY of these holds: the task is important or looks complex (a deliverable, several steps, design, plan, research, migration, release, audit, a long or multi-part request); or the request contains a trigger phrase (below), even if it is very simple.
 - **Light mode**: only for a very simple request with no trigger phrase (lookup, confirmation, small talk, one-field edit). Write one internal line, original intent + success criterion, then just do it.
-- **Not the user's request**: a simple yes/no or factual question (answer it directly); a hypothetical or a remark; a message relayed from another session or sub-agent. No full mode, and the marker never goes on messages to other sessions or sub-agents: it is for the user.
+- **Not the user's request**: a simple yes/no or factual question (answer it directly); a hypothetical or a remark; a message relayed from another session or sub-agent (one that opens with a fixed header or wrapper, such as a thread header or a system notice, is machine text). No full mode, and the marker never goes on messages to other sessions or sub-agents: it is for the user.
 - **Off**: the user fixes the scope ("only this", "just this one", "nothing else", 只改这一处, 就这个, 别的不用动).
 
 ## Triggers
@@ -249,7 +249,7 @@ Short and structured; lead with the result. Reply in the user's language. In ful
 
 - **完整模式**（必须）：三步都走。回复开头先给三栏，最多 12 行，每项一行：标记 `【大局观 · …】`，然后是**直接做 · 先提议 · 不做（原因）**，分析放在后面。满足任一条件即必须：任务重要或看起来复杂（交付物、多步骤、设计、方案、研究、迁移、发布、审计、长请求或多部分请求）；请求里有触发词（见下表），哪怕很简单。
 - **轻量模式**：只用于没有触发词的很简单的请求（查询、确认、闲聊、改一个字段）。心里写一行「原始意图 + 成功标准」，然后直接做。
-- **不是用户的请求**：简单的是非题或事实题（直接答）；假设或随口的评论；别的会话或子 agent 转来的消息。不进完整模式；标记是给用户看的，发给其他会话或子 agent 的消息一律不加。
+- **不是用户的请求**：简单的是非题或事实题（直接答）；假设或随口的评论；别的会话或子 agent 转来的消息（以固定的消息头或包裹开头的，比如线程消息头、系统通知，就是机器消息）。不进完整模式；标记是给用户看的，发给其他会话或子 agent 的消息一律不加。
 - **不用**：用户限定了范围（只改这一处、就这个、别的不用动、only this）。
 
 ## 触发词

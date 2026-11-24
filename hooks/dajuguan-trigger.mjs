@@ -65,7 +65,7 @@ function dropLeadingWrappers(text) {
   }
 }
 
-const PATTERNS = Object.entries(T.patterns || {}).filter(([k]) => !k.startsWith("_")).map(([p, re]) => ({ p, re: new RegExp(re, "i") }));
+const PATTERNS = Object.entries(T.patterns || {}).filter(([k]) => !k.startsWith("_")).map(([p, re]) => ({ p, re: new RegExp(re, "iu") }));
 const SCOPE_FIXED = compile(T.scopeFixed);
 const EXPLICIT = compile(T.explicit);
 // 等 alone means "etc." only in a list ("A、B、C 等"), not in 等待 / 等一下 / 平等 / 等级 …
@@ -74,6 +74,15 @@ const DENG = new RegExp(`(?<![${T.deng.notAfter}])等(?![${T.deng.notBefore}]|${
 const FILLERS = T.fillers ? new RegExp(T.fillers, "g") : null;
 const TRAILERS = (NU.trailers || []).map((re) => new RegExp(re, "i"));
 const ASKED = NU.asked ? { task: new RegExp(NU.asked.task, "i"), ask: new RegExp(NU.asked.ask, "i") } : null;
+// A relayed message asks for the method only when its own first header is a new task (TASK / FOLLOWUP)
+// and the words after that header ask for it. A sub-agent's report never does: it may quote tasks.
+function relayedAsk(raw) {
+  if (!ASKED || /<agent-message\b|\[Subagent hand-?back\]/i.test(raw)) return false;
+  const m = raw.match(/^[ \t]*\[tw:[^\]\n]+\][^\n]*$/m);
+  if (!m || !ASKED.task.test(m[0])) return false;
+  const body = raw.slice(m.index + m[0].length).split(/<\/cross-session-message/i)[0];
+  return ASKED.ask.test(body);
+}
 
 // Text the user pasted is material, not their own words: drop code blocks and quoted lines.
 function ownWords(prompt) {
@@ -100,7 +109,7 @@ export function classify(prompt, event = {}) {
   // (thread header, system notice, sub-agent hand-back): the prompt is not the user's.
   if ((!text.trim() && raw.trim()) || NOT_USER_START.some((re) => re.test(text))) {
     // …unless it is a new task that explicitly asks for the method (a coordinator's "use the big picture").
-    if (ASKED && ASKED.task.test(raw) && ASKED.ask.test(raw)) return { mode: "full", why: "a relayed task asks for it" };
+    if (relayedAsk(raw)) return { mode: "full", why: "a relayed task asks for it" };
     return { mode: "off", why: "not the user's words" };
   }
   if (/^\s*\/dajuguan\b/i.test(text)) return { mode: "full", why: "asked for it: /dajuguan" };

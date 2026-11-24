@@ -11,7 +11,9 @@ import { fileURLToPath } from "node:url";
 
 // The opening line may carry a fixed thread header first ("[tw:X] DONE a -> b T1"), then the body.
 const HEADER = /^\s*\[[a-z]+:[^\]\n]+\][^\n]*\n/i;
-const MARKER = /^[\s>*_#-]*(?:【\s*大局观|\[\s*big[- ]picture\b)/i;
+// The marker as the method writes it: a bracket, the name, then "·" (【大局观 · …】, [Big picture · …]).
+// Talking about the marker ("【大局观】标记的规则…") is not the marker.
+const MARKER = /^[\s>*_#-]*[【\[]\s*(?:大局观|全局观|big[- ]picture)\s*[·・]/i;
 
 export function opensWithMarker(text) {
   const body = String(text || "").replace(HEADER, "");

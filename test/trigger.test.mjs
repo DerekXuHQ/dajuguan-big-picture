@@ -13,10 +13,10 @@ const cases = [
   ["off", "!cd ~/Documents/dajuguan-skill && node install.mjs --dry-run"],
   ["off", "<bash-input>node install.mjs --lang zh</bash-input>"],
   // Not typed by the user: other sessions, sub-agents, background and scheduled runs.
-  ["off", '<cross-session-message from-session="s1">\n[tw:TFCC] DONE core -> lead T56\n改了按钮、菜单等，你来判断还有什么\n</cross-session-message>'],
-  ["off", '<cross-session-message from-session="s1">\n[tw:TFCC] TASK lead -> dj T63\n比如这些，之类的，被截断'],
-  ["off", "[tw:TFCC] DONE core -> lead T56\nfixed buttons, menus, etc. — you decide what else"],
-  ["off", "  [tw:IELTS] UPDATE ui -> lead T9\n1. a\n2. b\n3. c"],
+  ["off", '<cross-session-message from-session="s1">\n[tw:PROJ] DONE core -> lead T56\n改了按钮、菜单等，你来判断还有什么\n</cross-session-message>'],
+  ["off", '<cross-session-message from-session="s1">\n[tw:PROJ] TASK lead -> dj T63\n比如这些，之类的，被截断'],
+  ["off", "[tw:PROJ] DONE core -> lead T56\nfixed buttons, menus, etc. — you decide what else"],
+  ["off", "  [tw:APP] UPDATE ui -> lead T9\n1. a\n2. b\n3. c"],
   ["off", "[SYSTEM NOTIFICATION - NOT USER INPUT]\nBackground task done: checked skills, hooks and similar"],
   ["off", "<task-notification>\n<task-id>x</task-id>\n<summary>Monitor event: 比如这些</summary>\n</task-notification>"],
   ["off", 'Another Claude session sent a message:\n<agent-message from="a41">\n[Subagent hand-back] found bugs such as X and Y\n</agent-message>'],
@@ -24,10 +24,10 @@ const cases = [
   ["off", "<child-session-event>\nturn failed: tried A, B, etc.\n</child-session-event>"],
   ["off", '<wake reason="external-event"><webhook-payload>{"text":"such as this"}</webhook-payload></wake>'],
   // …but the user's own words around a relayed message still count.
-  ["full", '<cross-session-message from-session="s1">\n[tw:TFCC] DONE core -> lead T56\n</cross-session-message>\n这条回报你来判断还要补什么'],
-  ["full", "看看这条线程消息，比如它说的 T56：[tw:TFCC] DONE core -> lead T56"],
+  ["full", '<cross-session-message from-session="s1">\n[tw:PROJ] DONE core -> lead T56\n</cross-session-message>\n这条回报你来判断还要补什么'],
+  ["full", "看看这条线程消息，比如它说的 T56：[tw:PROJ] DONE core -> lead T56"],
   ["light", '把这条转给 ui 线程：<cross-session-message from-session="s1">比如这些，之类的</cross-session-message>'],
-  ["full", "> [tw:TFCC] DONE core -> lead T56\n这样的问题都修一下"],
+  ["full", "> [tw:PROJ] DONE core -> lead T56\n这样的问题都修一下"],
   // review round: mentioning a tag is not a wrapper; nesting; hyphenated names; header variants
   ["full", "hook 里要把 <task-notification> 和 <system-reminder> 之类的都过滤掉"],
   ["full", "<wake> 这个标签是什么意思？比如什么时候会出现"],
@@ -35,7 +35,7 @@ const cases = [
   ["off", '<cross-session-message from-session="a">\nfwd: <cross-session-message from-session="b">x</cross-session-message>\n改了按钮、菜单等，你来判断\n</cross-session-message>'],
   ["full", 'Another Claude session sent a message:\n<agent-message from="a">x</agent-message>\n\n这条你来判断还要补什么'],
   ["off", "[Subagent handback] checked A, B, etc."],
-  ["off", "**[tw:TFCC] DONE core -> lead T56** fixed menus, etc."],
+  ["off", "**[tw:PROJ] DONE core -> lead T56** fixed menus, etc."],
   ["light", "<cross-session-message from-session=\"a\">\n```\nstray fence\n</cross-session-message>\nok"],
   // 11-15 coverage pass: "etc."-style wording in both languages, including context-sensitive ones.
   ["full", "fix buttons, menus and such"],
@@ -122,6 +122,28 @@ const cases = [
   // Voice-typing filler sounds are not a list; a plain comma is not one either.
   ["light", "呃、嗯、把文件放到呃、桌面那个文件夹里，那些旧的不用动"],
   ["light", "我要的是已经做好的，这个定好了的展示内容，那些数据开发版不需要"],
+  // Not an ask: a path or URL, a "don't", a header quoted in a report, a sub-agent quoting a task.
+  ["off", "[tw:P] TASK lead -> a T2\n改 ~/.claude/dajuguan/hooks 和 github.com/x/dajuguan-big-picture 的 README"],
+  ["off", "[tw:P] TASK lead -> a T2\n这个任务不用大局观，直接改"],
+  ["off", "[tw:P] TASK lead -> a T2\n不要用大局观开头，直接回 ACK"],
+  ["off", "[tw:P] FOLLOWUP lead -> a T2\ndon't use the big picture here, just fix it"],
+  ["off", "[tw:P] DONE a -> b T1\n原任务 [tw:P] TASK lead -> a T1 已完成；后续可以 use the big picture 文档"],
+  ["off", "[tw:P] ACK a -> lead T1\n收到，[tw:P] FOLLOWUP 里说的 /dajuguan 我会跑"],
+  ["off", 'Another Claude session sent a message:\n<agent-message from="a1">\n[Subagent hand-back] 复现：[tw:X] TASK lead -> a T2\n用大局观看一下\n</agent-message>'],
+  ["full", "[tw:P] TASK lead -> a T2\n你要用大局观把登录流程过一遍"],
+  ["full", "[tw:P] TASK lead -> a T2\n先跑 /dajuguan 再动手"],
+  // 额 is a word (金额、余额), not a filler.
+  ["full", "金额、数量那些都要显示"],
+  // 等 as "wait": 然后等 / 再等 / 先等.
+  ["light", "先做 APP，然后等 app 做好了你把安装包也做出来"],
+  // 是什么的 / 做什么的 / 什么的话 are questions, not "and so on".
+  ["light", "这个按钮是做什么的？"],
+  ["light", "如果你知道是什么的话就直接改"],
+  // A narrowing instruction with 和其他 is not a list.
+  ["light", "暂时不要跑测试和其他非开发的任务。"],
+  // Voice input lists with commas still count; a long clause before a comma does not.
+  ["full", "把登录，注册，找回密码那些页面都改一下"],
+  ["full", "登录，注册这种的都要"],
   // 「大局」 alone is ordinary speech, not asking for the method.
   ["light", "顾全大局，先把这个按钮改了"],
 ];
@@ -166,8 +188,9 @@ const always = fs.readFileSync(path.join(root, "always-on.md"), "utf8");
 const skillMd = fs.readFileSync(path.join(root, "skills", "dajuguan", "SKILL.md"), "utf8");
 for (const [what, inMsg, inRule, inSkill] of [
   ["three columns, 12 lines", /three columns, 12 lines at most/, /three columns, 12 lines at most[\s\S]*三栏，最多 12 行/, /three columns, 12 lines at most[\s\S]*三栏，最多 12 行/],
-  ["examples are samples", /an example inside a request is a sample/, /examples are samples[\s\S]*例子是样本/, /sample/],
+  ["examples are samples", /an example inside a request is a sample/, /examples are samples[\s\S]*例子是样本/, /request, example and correction the user gives is a \*\*sample\*\*[\s\S]*例子和纠正都是\*\*样本\*\*/],
   ["relayed messages are not the user's", /a relayed report is not a request/, /relayed from another session[\s\S]*转来的消息都不是我的请求/, /relayed from another session[\s\S]*转来的消息/],
+  ["fixed openings mean machine text", /opens with a fixed header or wrapper/, /opens with a fixed header or wrapper[\s\S]*以固定的消息头或包裹开头/, /opens with a fixed header or wrapper[\s\S]*以固定的消息头或包裹开头/],
   ["no marker to other sessions", /never put it on messages to other sessions/, /never put the marker on messages to other sessions[\s\S]*发给其他会话的消息也不加标记/, /marker never goes on messages to other sessions[\s\S]*发给其他会话或子 agent 的消息一律不加/],
   ["simple question answered directly", /simple yes\/no or factual question/, /simple yes\/no or factual question[\s\S]*简单的是非题或事实题直接答/, /simple yes\/no or factual question[\s\S]*简单的是非题或事实题/],
 ]) {
@@ -179,10 +202,10 @@ for (const [what, inMsg, inRule, inSkill] of [
 // The outgoing guard: a message to another session that opens with the marker is stopped; others pass.
 import { decide } from "../hooks/dajuguan-outgoing.mjs";
 const send = (message, tool = "mcp__claude-code-remote__send_message") => decide({ hook_event_name: "PreToolUse", tool_name: tool, tool_input: { session_id: "s1", message } });
-for (const m of ["【大局观 · 已完成】\n改好了", "[tw:P] DONE ui -> lead T9\n【大局观 · 收到】开始做", "[Big picture · done] fixed", "**【大局观 · 汇总】** 三件事", "[tw:P] ACK ui -> lead T9\n\n[Big-picture · ok]"])
+for (const m of ["【全局观 · x】", "[大局观 · 回执]", "【大局观 · 已完成】\n改好了", "[tw:P] DONE ui -> lead T9\n【大局观 · 收到】开始做", "[Big picture · done] fixed", "**【大局观 · 汇总】** 三件事", "[tw:P] ACK ui -> lead T9\n\n[Big-picture · ok]"])
   assert.equal(send(m)?.hookSpecificOutput?.permissionDecision, "deny", m);
 assert.equal(decide({ tool_name: "SendMessage", tool_input: { to: "a1", message: "【大局观 · x】 y" } })?.hookSpecificOutput?.permissionDecision, "deny");
-for (const m of ["[tw:P] DONE ui -> lead T9\n改好了，用了大局观的三栏", "结论：这次没用【大局观】标记", "", "plain report"])
+for (const m of ["[tw:P] DONE ui -> lead T9\n改好了，用了大局观的三栏", "结论：这次没用【大局观】标记", "[tw:P] DONE a -> lead T1\n【大局观】标记的规则已改完", "", "plain report"])
   assert.equal(send(m), null, m);
 assert.equal(decide({}), null);
 const outScript = path.join(root, "hooks", "dajuguan-outgoing.mjs");

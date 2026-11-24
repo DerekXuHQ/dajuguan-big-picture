@@ -71,7 +71,8 @@ const NODE = stableNode();
 const HOOK_CMD = `"${NODE}" "${HOOK_SCRIPT}"`;
 const OUT_CMD = `"${NODE}" "${OUT_SCRIPT}"`;
 // Start-up check, plain shell: it still runs when node itself is gone, which is what it is for.
-const CHECK_CMD = `[ -x "${NODE}" ] && [ -f "${HOOK_SCRIPT}" ] || echo '{"systemMessage":"dajuguan: the big-picture hook cannot run (node or the hook file is missing, often after an upgrade). Run node install.mjs --check in your dajuguan folder."}' # dajuguan-check`;
+const RULE_FILE = P.claudeMd;
+const CHECK_CMD = `[ -x "${NODE}" ] && [ -f "${HOOK_SCRIPT}" ] && [ -f "${OUT_SCRIPT}" ] && grep -q "dajuguan:begin" "${RULE_FILE}" 2>/dev/null || echo '{"systemMessage":"dajuguan: part of the big-picture setup is missing (node, a hook file or the rule in CLAUDE.md; often after an upgrade). Run node install.mjs --check in your dajuguan folder."}' # dajuguan-check`;
 const SEND_TOOLS = "mcp__claude-code-remote__send_message|SendMessage";
 // Our entries in settings.json, by event; recognised by the script name in the command.
 const ENTRIES = () => [
@@ -190,7 +191,8 @@ function currentState() {
   const m = md.match(new RegExp(`${BEGIN}\\n([\\s\\S]*?)\\n${END}`));
   const skillFile = path.join(P.skill, "SKILL.md");
   return {
-    version: fs.existsSync(path.join(P.home, "VERSION")) ? fs.readFileSync(path.join(P.home, "VERSION"), "utf8").trim() : "unknown",
+    // Versions before 1.4.0 wrote no VERSION file.
+    version: fs.existsSync(path.join(P.home, "VERSION")) ? fs.readFileSync(path.join(P.home, "VERSION"), "utf8").trim() : Object.keys(files).length ? "before 1.4.0" : "none",
     files, rule: m ? m[1] : null, entries: ourEntries(readJson(P.settings)),
     skill: fs.existsSync(skillFile) ? fs.readFileSync(skillFile, "utf8") : null,
   };
@@ -236,7 +238,12 @@ function rollback() {
 
 function check() {
   const problems = [], ok = [], notes = [];
-  const st = currentState();
+  let st;
+  try { st = currentState(); } catch (e) {
+    console.log(`dajuguan check (${CLAUDE.replace(HOME, "~")}):\n  PROBLEM   ${e.message}`);
+    process.exitCode = 1;
+    return;
+  }
   // Another version installed on purpose (a rollback, or this folder is newer): what differs from this
   // folder is expected and only noted; what stops it from running is still a problem.
   const other = st.version !== VERSION;
@@ -249,7 +256,9 @@ function check() {
     if (!got) { (e.mark === "dajuguan-trigger.mjs" ? problems : { push: differs }).push(`${e.event} entry missing in ${P.settings.replace(HOME, "~")}`); continue; }
     const exe = got.command.match(/^\[ -x "([^"]+)"|^"([^"]+)"/);
     const bin = exe && (exe[1] || exe[2]);
+    const script = (got.command.match(/"([^"]+\.mjs)"/) || [])[1];
     if (bin && !fs.existsSync(bin)) problems.push(`${e.event} entry runs ${bin}, which no longer exists`);
+    else if (script && !fs.existsSync(script)) problems.push(`${e.event} entry runs ${script}, which is missing`);
     else ok.push(`${e.event} entry`);
   }
   if (st.rule == null) problems.push(`rule block missing in ${P.claudeMd.replace(HOME, "~")}`);
@@ -302,7 +311,8 @@ function install() {
     }
   }
   // Keep what was there before, so --rollback can bring it back; record the version now installed.
-  if (!DRY && (before.version !== "unknown" || Object.keys(before.files).length)) {
+  const hadSomething = Object.keys(before.files).length || before.entries.length || before.rule != null;
+  if (!DRY && hadSomething) {
     if (has("--no-skill")) before.skill = null; // someone else's copy: not ours to bring back
     // Only a real version change replaces the saved one: reinstalling the same version (or a fix
     // to it) must not overwrite the version you would roll back to.
@@ -327,6 +337,8 @@ function uninstall() {
     say("remove", file, "rule block only");
   }
   if (fs.existsSync(P.hooks)) { if (!DRY) fs.rmSync(P.hooks, { recursive: true }); say("remove", P.hooks); }
+  // Nothing installed now: no version, and nothing to roll back to.
+  for (const p of [path.join(P.home, "VERSION"), PREV]) if (fs.existsSync(p)) { if (!DRY) fs.rmSync(p, { recursive: true }); say("remove", p); }
   log.push(`  kept      ${P.home.replace(HOME, "~")}  (backups, my-triggers.txt and not-mine.txt)`);
 }
 

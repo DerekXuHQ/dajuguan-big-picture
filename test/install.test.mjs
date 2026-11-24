@@ -108,13 +108,18 @@ const goodMd = read(".claude", "CLAUDE.md");
 fs.writeFileSync(f(".claude", "CLAUDE.md"), goodMd.replace("Big-picture rule", "Big-picture rule EDITED"));
 assert.match(checkOut(), /PROBLEM\s+rule block differs/);
 fs.writeFileSync(f(".claude", "CLAUDE.md"), goodMd);
+// The start-up check also speaks up when the rule block is gone.
+const keepMd = read(".claude", "CLAUDE.md");
+fs.writeFileSync(f(".claude", "CLAUDE.md"), "# My rules\n");
+assert.match(JSON.parse(execFileSync("/bin/sh", ["-c", checkCmd], { encoding: "utf8" })).systemMessage, /setup is missing/);
+fs.writeFileSync(f(".claude", "CLAUDE.md"), keepMd);
 // A broken node path (an upgrade removed it) is reported, and the start-up check speaks up.
 const sx = JSON.parse(read(".claude", "settings.json"));
 for (const ev of ["UserPromptSubmit", "SessionStart"]) for (const g of sx.hooks[ev]) for (const h of g.hooks) h.command = h.command.replaceAll(process.execPath, "/no/such/node").replace(/"[^"]*\/bin\/node"/, '"/no/such/node"');
 fs.writeFileSync(f(".claude", "settings.json"), JSON.stringify(sx, null, 2));
 assert.throws(() => run("--check"), (e) => /PROBLEM\s+UserPromptSubmit entry runs \/no\/such\/node/.test(e.stdout));
 const broken = byMark(sx, "SessionStart", "dajuguan-check")[0].hooks[0].command;
-assert.match(JSON.parse(execFileSync("/bin/sh", ["-c", broken], { encoding: "utf8" })).systemMessage, /cannot run/);
+assert.match(JSON.parse(execFileSync("/bin/sh", ["-c", broken], { encoding: "utf8" })).systemMessage, /setup is missing/);
 run("--codex");                                                                      // reinstall repairs it
 assert.match(run("--check"), /trigger hook runs \(fires on a request: true/);
 
@@ -137,11 +142,20 @@ assert.ok(!fs.existsSync(f(".claude", "skills", "dajuguan")));
 assert.equal(ours(JSON.parse(read(".claude", "settings.json"))).length, 1);
 run("--uninstall");
 
+// Uninstall, install again, roll back: nothing to roll back to (no empty "previous"), nothing taken apart.
+run("--uninstall");
+assert.ok(!fs.existsSync(f(".claude", "dajuguan", "VERSION")));
+run();
+assert.throws(() => run("--rollback"), (e) => /Nothing to roll back to/.test(e.stdout));
+assert.match(run("--check"), /trigger hook runs \(fires on a request: true/);
+run("--uninstall");
+
 // Broken settings.json: refuse, change nothing.
 fs.writeFileSync(f(".claude", "settings.json"), "{ not json");
 assert.throws(() => run(), /not valid JSON/);
 assert.equal(read(".claude", "settings.json"), "{ not json");
 assert.ok(!fs.existsSync(f(".claude", "skills", "dajuguan")), "nothing installed when settings are broken");
+assert.match(checkOut(), /PROBLEM\s+.*not valid JSON/);
 
 // A second profile (CLAUDE_CONFIG_DIR) gets its own copy; the default profile is untouched.
 fs.writeFileSync(f(".claude", "settings.json"), JSON.stringify(mine, null, 2));
