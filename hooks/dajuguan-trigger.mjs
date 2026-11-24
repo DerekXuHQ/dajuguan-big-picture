@@ -6,8 +6,12 @@
 // context for this turn, so the dajuguan skill is used every time — not only when the model
 // happens to pick it. Prints nothing (no extra context, no cost) otherwise.
 //
+// Text the user did not type (messages from other sessions or sub-agents, background and
+// scheduled runs) never triggers: see "notUser" in triggers.json.
+//
 // No dependencies, no network, no files written. Personal extra phrases may be listed one per
-// line in ~/.claude/dajuguan/my-triggers.txt, or <CLAUDE_CONFIG_DIR>/dajuguan/ for another profile (optional; read only).
+// line in ~/.claude/dajuguan/my-triggers.txt, or <CLAUDE_CONFIG_DIR>/dajuguan/ for another profile;
+// the fixed opening words of your own scheduled prompts go in not-mine.txt there (both optional; read only).
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -27,14 +31,40 @@ const compile = (list) => list.map((p) => ({
     : new RegExp(esc(p)),
 }));
 
-function personal() {
+function personal(name) {
   try {
-    return fs.readFileSync(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude"), "dajuguan", "my-triggers.txt"), "utf8")
+    return fs.readFileSync(path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude"), "dajuguan", name), "utf8")
       .split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
   } catch { return []; }
 }
 
-const TRIGGERS = compile([...Object.values(T.triggers).flat(), ...personal()]);
+const TRIGGERS = compile([...Object.values(T.triggers).flat(), ...personal("my-triggers.txt")]);
+const NU = T.notUser || {};
+const TAGS = (NU.tags || []).map(esc).join("|");
+// A tag name ends at a space, ">" or "/": <wake-lock> is not <wake>.
+const OPEN = TAGS && new RegExp(`<(${TAGS})(?=[\\s>/])[^>]*>`, "i");
+const PAIR = TAGS && new RegExp(`<(${TAGS})(?=[\\s>/])[^>]*>[\\s\\S]*?<\\/\\1\\s*>`, "gi");
+const PREAMBLE = /^\s*Another Claude session sent a message:\s*/i;
+const NOT_USER_START = [...(NU.starts || []), ...personal("not-mine.txt").map(esc)]
+  .map((re) => new RegExp(`^[\\s*_]*(?:${re})`, "i"));
+
+// Drop wrapped messages that open the prompt. Each runs to its matching close (nesting counted, so a
+// forwarded message inside one stays inside); one left open (cut off) runs to the end.
+function dropLeadingWrappers(text) {
+  for (;;) {
+    text = text.replace(PREAMBLE, "");
+    const m = OPEN && text.match(OPEN);
+    if (!m || text.slice(0, m.index).trim()) return text;
+    const tag = new RegExp(`<(\\/?)${esc(m[1])}(?=[\\s>/])[^>]*>`, "gi");
+    tag.lastIndex = m.index + m[0].length;
+    let depth = 1, end = -1, t;
+    while (depth && (t = tag.exec(text))) if ((depth += t[1] ? -1 : 1) === 0) end = t.index + t[0].length;
+    // Unclosed: a real (cut-off) wrapper puts its body on the next line; "<wake> 是什么" is a mention.
+    if (end < 0) { if (!/^[ \t]*(\n|$)/.test(text.slice(m.index + m[0].length))) return text; end = text.length; }
+    text = text.slice(end);
+  }
+}
+
 const PATTERNS = Object.entries(T.patterns || {}).filter(([k]) => !k.startsWith("_")).map(([p, re]) => ({ p, re: new RegExp(re, "i") }));
 const SCOPE_FIXED = compile(T.scopeFixed);
 const EXPLICIT = compile(T.explicit);
@@ -43,16 +73,28 @@ const DENG = new RegExp(`(?<![${T.deng.notAfter}])等(?![${T.deng.notBefore}])`)
 
 // Text the user pasted is material, not their own words: drop code blocks and quoted lines.
 function ownWords(prompt) {
-  return prompt
+  // System text and other sessions' messages arrive through the same hook: not the user's words
+  // either. Dropped first, so a stray ``` inside one cannot pair with the user's own code fence.
+  let text = dropLeadingWrappers(prompt);
+  if (PAIR) text = text.replace(PAIR, " ");
+  return text
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/<pasted_content[\s\S]*?<\/pasted_content[^>]*>/g, " ")
-    // System text that arrives through the same hook is not the user's words either.
-    .replace(/<(system-reminder|task-notification|local-command-stdout|command-stdout|bash-stdout|bash-stderr)\b[\s\S]*?<\/\1>/g, " ")
     .split("\n").filter((l) => !/^\s*>/.test(l)).join("\n");
 }
 
-export function classify(prompt) {
-  const text = ownWords(String(prompt || ""));
+export function classify(prompt, event = {}) {
+  // The host may say outright where the prompt came from (only "human" is the user typing).
+  const origin = String(event.origin?.kind || "").toLowerCase();
+  const src = String(event.promptSource || "").toLowerCase();
+  if ((origin && origin !== "human") || src === "system" || event.isMeta === true || event.isMeta === "true")
+    return { mode: "off", why: `not typed by the user (${origin || src || "meta"})` };
+  const raw = String(prompt || "");
+  const text = ownWords(raw);
+  // Nothing left once wrapped messages are dropped, or what is left opens with a relayed message
+  // (thread header, system notice, sub-agent hand-back): the prompt is not the user's.
+  if ((!text.trim() && raw.trim()) || NOT_USER_START.some((re) => re.test(text)))
+    return { mode: "off", why: "not the user's words" };
   if (/^\s*\/dajuguan\b/i.test(text)) return { mode: "full", why: "asked for it: /dajuguan" };
   if (!text.trim() || /^\s*\//.test(text)) return { mode: "off", why: "empty or slash command" };
   // A shell command typed in bash mode ("!git status", or wrapped in <bash-input>) is not a request.
@@ -83,9 +125,9 @@ const MESSAGE = {
 async function main() {
   let raw = "";
   for await (const chunk of process.stdin) raw += chunk;
-  let prompt = "";
-  try { prompt = JSON.parse(raw).prompt || ""; } catch { return; }
-  const r = classify(prompt);
+  let event;
+  try { event = JSON.parse(raw) || {}; } catch { return; }
+  const r = classify(event.prompt || "", event);
   if (r.mode !== "full") return;
   process.stdout.write(JSON.stringify({
     hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: MESSAGE.full(r.why) },

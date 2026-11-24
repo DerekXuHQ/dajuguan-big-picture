@@ -61,7 +61,7 @@ A skill alone is not enough. Assistants pick skills by reading their description
 | Unsure which way | not sure which, can't decide · 拿不准、不知道该 |
 | Big request | 400+ characters, or 3+ numbered or bulleted items |
 
-**What it ignores**: other slash commands; code blocks and quoted lines you pasted (that's material, not your words); "only this", "just this one", 只改这一处 (you fixed the scope); 等 when it is not "etc." (等一下, 平等, 等级); "like" as an ordinary word.
+**What it ignores**: other slash commands; code blocks and quoted lines you pasted (that's material, not your words); "only this", "just this one", 只改这一处 (you fixed the scope); 等 when it is not "etc." (等一下, 平等, 等级); "like" as an ordinary word; text you did not type — messages from other sessions or sub-agents (`<cross-session-message>`, `[tw:…]` thread headers), system and background notices, scheduled runs — though your own words around a wrapped message still count (a prompt that opens with a bare `[tw:…]` header is read as the relayed message as a whole) (list the opening words of your own scheduled prompts in `~/.claude/dajuguan/not-mine.txt`).
 
 ## What's in this repo
 
@@ -91,6 +91,7 @@ test/                         trigger tests (real phrasings) + installer tests (
 | `~/.codex/AGENTS.md` | The same rule, for Codex | only with `--codex` (and not with `--no-rule`) |
 | `~/.claude/dajuguan/backup/<time>/` | A copy of every file above as it was before it changed | automatic |
 | `~/.claude/dajuguan/my-triggers.txt` | Your own trigger phrases, one per line (optional; you create it) | you |
+| `~/.claude/dajuguan/not-mine.txt` | Opening words of your own scheduled prompts, one per line, so they never trigger (optional; you create it) | you |
 
 Requirements: [Claude Code](https://code.claude.com) and/or Codex CLI, and Node.js 18 or later. Codex uses the hook files under `~/.claude/dajuguan/hooks/` too. The hook makes no network requests and writes no files; it reads your message and prints at most one line.
 
@@ -194,7 +195,7 @@ Script:
 node install.mjs --uninstall
 ```
 
-It removes the skill, the hook files, the hook entry in `settings.json` and the rule block. Everything else in those files stays. Backups and your `my-triggers.txt` are kept in `~/.claude/dajuguan/`; delete that folder too if you want nothing left.
+It removes the skill, the hook files, the hook entry in `settings.json` and the rule block. Everything else in those files stays. Backups, your `my-triggers.txt` and `not-mine.txt` are kept in `~/.claude/dajuguan/`; delete that folder too if you want nothing left.
 
 ## Customize
 
@@ -262,7 +263,7 @@ AI 按描述自己挑技能。带「等」的一句短话看上去很简单，�
 | 拿不准选哪个 | 拿不准、不知道该；not sure which |
 | 大请求 | 400 字以上，或 3 条以上的编号/列表 |
 
-**不触发**：其他斜杠命令；你粘贴的代码块和引用（那是材料，不是你的话）；「只改这一处」「就这个」（你限定了范围）；不是列举意思的「等」（等一下、平等、等级）；普通用法的「像」「这种」。
+**不触发**：其他斜杠命令；你粘贴的代码块和引用（那是材料，不是你的话）；「只改这一处」「就这个」（你限定了范围）；不是列举意思的「等」（等一下、平等、等级）；普通用法的「像」「这种」；不是你打的字：其他会话或子 agent 发来的消息（`<cross-session-message>`、`[tw:…]` 线程消息头）、系统和后台通知、定时任务——但你在包裹外面自己写的话照样算（开头就是裸 `[tw:…]` 消息头的，整条按转来的消息算）（自己的定时任务提示词，把开头几个字写进 `~/.claude/dajuguan/not-mine.txt`）。
 
 ### 装了什么、装在哪
 
@@ -277,6 +278,7 @@ AI 按描述自己挑技能。带「等」的一句短话看上去很简单，�
 | `~/.codex/AGENTS.md` | 同一条规则，给 Codex 用 | 只有加 `--codex` 才装 |
 | `~/.claude/dajuguan/backup/<时间>/` | 上面每个文件改动前的备份 | 自动 |
 | `~/.claude/dajuguan/my-triggers.txt` | 你自己的触发词，一行一个（可选，你自己建） | 你 |
+| `~/.claude/dajuguan/not-mine.txt` | 你自己定时任务提示词的开头几个字，一行一个，这些不触发（可选，你自己建） | 你 |
 
 需要：[Claude Code](https://code.claude.com) 或 Codex 命令行（或两个都有），以及 Node.js 18 以上。Codex 也用 `~/.claude/dajuguan/hooks/` 下的钩子文件。钩子不联网、不写文件，只读你这条消息，最多输出一行。
 
@@ -367,7 +369,7 @@ echo '{"prompt":"好的"}' | node ~/.claude/dajuguan/hooks/dajuguan-trigger.mjs 
 node install.mjs --uninstall
 ```
 
-删掉技能、钩子文件、`settings.json` 里那一条钩子和规则块；这些文件里你自己的内容都留着。备份和 `my-triggers.txt` 留在 `~/.claude/dajuguan/`，想彻底清掉就把这个文件夹也删了。
+删掉技能、钩子文件、`settings.json` 里那一条钩子和规则块；这些文件里你自己的内容都留着。备份、`my-triggers.txt` 和 `not-mine.txt` 留在 `~/.claude/dajuguan/`，想彻底清掉就把这个文件夹也删了。
 
 ### 自定义
 

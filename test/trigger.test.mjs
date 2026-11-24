@@ -1,6 +1,8 @@
 // node test/trigger.test.mjs — checks the hook's decisions on real-world phrasings.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { classify } from "../hooks/dajuguan-trigger.mjs";
@@ -10,6 +12,31 @@ const cases = [
   ["off", "<system-reminder>examples such as these</system-reminder>"],
   ["off", "!cd ~/Documents/dajuguan-skill && node install.mjs --dry-run"],
   ["off", "<bash-input>node install.mjs --lang zh</bash-input>"],
+  // Not typed by the user: other sessions, sub-agents, background and scheduled runs.
+  ["off", '<cross-session-message from-session="s1">\n[tw:TFCC] DONE core -> lead T56\n改了按钮、菜单等，你来判断还有什么\n</cross-session-message>'],
+  ["off", '<cross-session-message from-session="s1">\n[tw:TFCC] TASK lead -> dj T63\n比如这些，之类的，被截断'],
+  ["off", "[tw:TFCC] DONE core -> lead T56\nfixed buttons, menus, etc. — you decide what else"],
+  ["off", "  [tw:IELTS] UPDATE ui -> lead T9\n1. a\n2. b\n3. c"],
+  ["off", "[SYSTEM NOTIFICATION - NOT USER INPUT]\nBackground task done: checked skills, hooks and similar"],
+  ["off", "<task-notification>\n<task-id>x</task-id>\n<summary>Monitor event: 比如这些</summary>\n</task-notification>"],
+  ["off", 'Another Claude session sent a message:\n<agent-message from="a41">\n[Subagent hand-back] found bugs such as X and Y\n</agent-message>'],
+  ["off", "[Subagent hand-back] reviewed files, etc."],
+  ["off", "<child-session-event>\nturn failed: tried A, B, etc.\n</child-session-event>"],
+  ["off", '<wake reason="external-event"><webhook-payload>{"text":"such as this"}</webhook-payload></wake>'],
+  // …but the user's own words around a relayed message still count.
+  ["full", '<cross-session-message from-session="s1">\n[tw:TFCC] DONE core -> lead T56\n</cross-session-message>\n这条回报你来判断还要补什么'],
+  ["full", "看看这条线程消息，比如它说的 T56：[tw:TFCC] DONE core -> lead T56"],
+  ["light", '把这条转给 ui 线程：<cross-session-message from-session="s1">比如这些，之类的</cross-session-message>'],
+  ["full", "> [tw:TFCC] DONE core -> lead T56\n这样的问题都修一下"],
+  // review round: mentioning a tag is not a wrapper; nesting; hyphenated names; header variants
+  ["full", "hook 里要把 <task-notification> 和 <system-reminder> 之类的都过滤掉"],
+  ["full", "<wake> 这个标签是什么意思？比如什么时候会出现"],
+  ["full", "<wake-lock> api, such as these"],
+  ["off", '<cross-session-message from-session="a">\nfwd: <cross-session-message from-session="b">x</cross-session-message>\n改了按钮、菜单等，你来判断\n</cross-session-message>'],
+  ["full", 'Another Claude session sent a message:\n<agent-message from="a">x</agent-message>\n\n这条你来判断还要补什么'],
+  ["off", "[Subagent handback] checked A, B, etc."],
+  ["off", "**[tw:TFCC] DONE core -> lead T56** fixed menus, etc."],
+  ["light", "<cross-session-message from-session=\"a\">\n```\nstray fence\n</cross-session-message>\nok"],
   // 11-15 coverage pass: "etc."-style wording in both languages, including context-sensitive ones.
   ["full", "fix buttons, menus and such"],
   ["full", "fix buttons, menus or similar"],
@@ -92,6 +119,20 @@ assert.equal(out.hookSpecificOutput.hookEventName, "UserPromptSubmit");
 assert.match(out.hookSpecificOutput.additionalContext, /dajuguan/);
 assert.equal(run("ok"), "");
 assert.equal(execFileSync("node", [script], { input: "not json", encoding: "utf8" }), "");
+// The host says where the prompt came from: only "human" is the user typing (scheduled runs, task notices).
+const runEvent = (extra) => execFileSync("node", [script], { input: JSON.stringify({ hook_event_name: "UserPromptSubmit", prompt: "列几个方案，比如 A 和 B", ...extra }), encoding: "utf8" });
+assert.equal(runEvent({ origin: { kind: "task-notification" } }), "");
+assert.equal(runEvent({ promptSource: "system" }), "");
+assert.equal(runEvent({ isMeta: true }), "");
+assert.match(runEvent({ origin: { kind: "human" } }), /dajuguan/);
+assert.equal(classify("每天早上 9 点：汇总昨天的 bug、需求等", { promptSource: "system" }).mode, "off");
+// Your own scheduled prompt, listed by its opening words in not-mine.txt, does not trigger.
+const cfg = fs.mkdtempSync(path.join(os.tmpdir(), "dajuguan-test-"));
+fs.mkdirSync(path.join(cfg, "dajuguan"));
+fs.writeFileSync(path.join(cfg, "dajuguan", "not-mine.txt"), "# scheduled\n每日巡检（自动）\n");
+const runCfg = (prompt) => execFileSync("node", [script], { input: JSON.stringify({ prompt }), encoding: "utf8", env: { ...process.env, CLAUDE_CONFIG_DIR: cfg } });
+assert.equal(runCfg("每日巡检（自动）：看看构建、测试等"), "");
+assert.match(runCfg("看看构建、测试等"), /dajuguan/);
 
 assert.equal(fail, 0, `${fail} case(s) failed`);
 console.log(`trigger tests passed: ${cases.length} cases + end-to-end`);

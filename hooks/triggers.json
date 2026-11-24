@@ -222,5 +222,28 @@
     "A、B 那些": "[、，,][^。！？\\n]{0,15}(?:那些|这些东西|这一些|那一类)",
     "这样的问题": "(?:这样|这种|这类|那种|那样)的?(?:问题|情况|错误|bug|毛病|地方|东西)(?!下)",
     "什么 A 啊 B 啊": "什么[^。！？\\n]{1,12}[啊呀][^。！？\\n]{1,12}[啊呀]"
+  },
+  "notUser": {
+    "_comment": "Text that reaches the hook but was not typed by the user: other sessions, sub-agents, background and scheduled runs. Wrapped blocks are dropped; a prompt that starts with one of the 'starts' patterns (JavaScript regex, case-insensitive) is not the user's at all.",
+    "tags": [
+      "cross-session-message",
+      "agent-message",
+      "teammate-message",
+      "child-session-event",
+      "webhook-payload",
+      "wake",
+      "task-notification",
+      "system-reminder",
+      "local-command-stdout",
+      "command-stdout",
+      "bash-stdout",
+      "bash-stderr",
+      "scheduled-task"
+    ],
+    "starts": [
+      "\\[tw:[^\\]\\n]+\\]",
+      "\\[SYSTEM NOTIFICATION",
+      "\\[Subagent hand-?back\\]"
+    ]
   }
 }

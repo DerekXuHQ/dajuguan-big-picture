@@ -168,7 +168,7 @@ function uninstall() {
     say("remove", file, "rule block only");
   }
   if (fs.existsSync(P.hooks)) { if (!DRY) fs.rmSync(P.hooks, { recursive: true }); say("remove", P.hooks); }
-  log.push(`  kept      ${P.home.replace(HOME, "~")}  (backups and your my-triggers.txt)`);
+  log.push(`  kept      ${P.home.replace(HOME, "~")}  (backups, my-triggers.txt and not-mine.txt)`);
 }
 
 has("--uninstall") ? uninstall() : install();
