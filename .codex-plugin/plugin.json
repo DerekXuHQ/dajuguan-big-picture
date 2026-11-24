@@ -1,6 +1,6 @@
 {
   "name": "dajuguan",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Big picture (大局观): solve the intent behind a request, not just its literal words. One bilingual skill (English + 中文), an always-on rule, and a hook that switches it on when you write etc., e.g., such as, 等, 比如, 类似 …",
   "author": {
     "name": "DerekXuHQ",

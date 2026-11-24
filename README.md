@@ -61,7 +61,7 @@ A skill alone is not enough. Assistants pick skills by reading their description
 | Unsure which way | not sure which, can't decide · 拿不准、不知道该 |
 | Big request | 400+ characters, or 3+ numbered or bulleted items |
 
-**What it ignores**: other slash commands; code blocks and quoted lines you pasted (that's material, not your words); "only this", "just this one", 只改这一处 (you fixed the scope); 等 when it is not "etc." (等一下, 平等, 等级); "like" as an ordinary word; text you did not type — messages from other sessions or sub-agents (`<cross-session-message>`, `[tw:…]` thread headers), system and background notices, scheduled runs — though your own words around a wrapped message still count (a prompt that opens with a bare `[tw:…]` header is read as the relayed message as a whole) (list the opening words of your own scheduled prompts in `~/.claude/dajuguan/not-mine.txt`).
+**What it ignores**: other slash commands; code blocks and quoted lines you pasted (that's material, not your words); "only this", "just this one", 只改这一处 (you fixed the scope); 等 when it is not "etc." (等一下, 平等, 等级, 要等多久); voice-typing filler sounds (嗯、呃、), which are not a list; "like" as an ordinary word; text you did not type — messages from other sessions or sub-agents (`<cross-session-message>`, `[tw:…]` thread headers), system and background notices, scheduled runs — though your own words around a wrapped message still count (a prompt that opens with a bare `[tw:…]` header is read as the relayed message as a whole) (list the opening words of your own scheduled prompts in `~/.claude/dajuguan/not-mine.txt`).
 
 ## What's in this repo
 
@@ -83,13 +83,14 @@ test/                         trigger tests (real phrasings) + installer tests (
 | Where | What | Added by |
 |---|---|---|
 | `~/.claude/skills/dajuguan/SKILL.md` | The skill (English + Chinese in one file) | default; skip with `--no-skill` |
-| `~/.claude/dajuguan/hooks/` | The hook script and `triggers.json` | default; skip with `--no-hook` |
-| `~/.claude/settings.json` | One `UserPromptSubmit` entry pointing at the hook. Merged in: your other settings and hooks stay | default; skip with `--no-hook` |
+| `~/.claude/dajuguan/hooks/` | The trigger hook, the outgoing guard and `triggers.json` | default; skip with `--no-hook` |
+| `~/.claude/settings.json` | Three entries: `UserPromptSubmit` (the trigger), `PreToolUse` on the tools that message other sessions (the guard: a message that opens with the marker is stopped, because the marker is for you) and `SessionStart` (a plain-shell check that tells you if the hook can no longer run, e.g. after a node upgrade; not on Windows). Merged in: your other settings and hooks stay | default; skip with `--no-hook` |
 | `~/.claude/CLAUDE.md` | The always-on rule, between `<!-- dajuguan:begin -->` and `<!-- dajuguan:end -->` | default; skip with `--no-rule` |
 | `~/.codex/skills/dajuguan/SKILL.md` | The same skill, for Codex | only with `--codex` (and not with `--no-skill`) |
 | `~/.codex/hooks.json` | The same hook entry, for Codex. Merged in like `settings.json` | only with `--codex` (and not with `--no-hook`) |
 | `~/.codex/AGENTS.md` | The same rule, for Codex | only with `--codex` (and not with `--no-rule`) |
 | `~/.claude/dajuguan/backup/<time>/` | A copy of every file above as it was before it changed | automatic |
+| `~/.claude/dajuguan/previous/`, `VERSION` | The version installed before the last update (for `--rollback`) and the version installed now | automatic |
 | `~/.claude/dajuguan/my-triggers.txt` | Your own trigger phrases, one per line (optional; you create it) | you |
 | `~/.claude/dajuguan/not-mine.txt` | Opening words of your own scheduled prompts, one per line, so they never trigger (optional; you create it) | you |
 
@@ -172,7 +173,7 @@ Only Claude Code and Codex run the trigger hook. Everywhere else, the always-on 
 |---|---|
 | Claude Code plugin | Turn on auto-update once: `/plugin` → **Marketplaces** → `dajuguan-big-picture` → **Enable auto-update** (third-party marketplaces start with it off). Claude Code then checks in the background during a session, installs the new version and shows "Plugin updated · Run /reload-plugins to apply". Without auto-update: `claude plugin marketplace update dajuguan-big-picture` then `claude plugin update dajuguan@dajuguan-big-picture`. |
 | Codex plugin | `codex plugin marketplace upgrade dajuguan-big-picture` (Codex has no auto-update for added marketplaces). |
-| Script | `git pull` in your clone, then `node install.mjs` again. Lines marked `same` were already current. |
+| Script | `git pull` in your clone, then `node install.mjs` again. Lines marked `same` were already current. Back to the version before: `node install.mjs --rollback` (run it again to go forward). |
 | Claude.ai, ChatGPT, other web chats | Re-upload `SKILL.md` and re-paste the rule. Nothing updates these by itself. |
 
 To be told when there is a new version: on GitHub, **Watch → Custom → Releases** on this repository. Every update is published as a release with notes.
@@ -182,8 +183,15 @@ To be told when there is a new version: on GitHub, **Watch → Custom → Releas
 ```bash
 echo '{"prompt":"add export, e.g. PDF and Word"}' | node ~/.claude/dajuguan/hooks/dajuguan-trigger.mjs   # prints one line of JSON
 echo '{"prompt":"ok"}' | node ~/.claude/dajuguan/hooks/dajuguan-trigger.mjs                               # prints nothing
+node install.mjs --check                                                                                  # in the repo: is everything in place and runnable? (after an upgrade, for example)
 npm test                                                                                                  # in the repo: trigger + installer tests
 ```
+
+The installer writes a stable path to node (Homebrew's `bin/node`, not the versioned `Cellar/…` one), so upgrading node does not silently switch the hook off; if it still breaks, the start-up check says so once per session.
+
+### Limits: how it tells your words from relayed ones
+
+It goes by fixed wrappers and opening words only (`<cross-session-message>`, `<agent-message>`, `[tw:…]` thread headers, system notices; the full list is `notUser` in `triggers.json`). So: whatever you type that opens with one of those is taken as relayed and never triggers; a relayed message in a form the list does not know is taken as yours; and anyone can imitate the words. A relayed new task (`[tw:…] TASK` or `FOLLOWUP`) that explicitly asks for the method ("用大局观…", "use the big picture") still turns it on. The outgoing guard only looks at the first line of the message (after a thread header).
 
 ## Uninstall
 
@@ -263,20 +271,21 @@ AI 按描述自己挑技能。带「等」的一句短话看上去很简单，�
 | 拿不准选哪个 | 拿不准、不知道该；not sure which |
 | 大请求 | 400 字以上，或 3 条以上的编号/列表 |
 
-**不触发**：其他斜杠命令；你粘贴的代码块和引用（那是材料，不是你的话）；「只改这一处」「就这个」（你限定了范围）；不是列举意思的「等」（等一下、平等、等级）；普通用法的「像」「这种」；不是你打的字：其他会话或子 agent 发来的消息（`<cross-session-message>`、`[tw:…]` 线程消息头）、系统和后台通知、定时任务——但你在包裹外面自己写的话照样算（开头就是裸 `[tw:…]` 消息头的，整条按转来的消息算）（自己的定时任务提示词，把开头几个字写进 `~/.claude/dajuguan/not-mine.txt`）。
+**不触发**：其他斜杠命令；你粘贴的代码块和引用（那是材料，不是你的话）；「只改这一处」「就这个」（你限定了范围）；不是列举意思的「等」（等一下、平等、等级、要等多久）；语音输入的口头语（嗯、呃、），那不是在列举；普通用法的「像」「这种」；不是你打的字：其他会话或子 agent 发来的消息（`<cross-session-message>`、`[tw:…]` 线程消息头）、系统和后台通知、定时任务——但你在包裹外面自己写的话照样算（开头就是裸 `[tw:…]` 消息头的，整条按转来的消息算）（自己的定时任务提示词，把开头几个字写进 `~/.claude/dajuguan/not-mine.txt`）。
 
 ### 装了什么、装在哪
 
 | 位置 | 内容 | 什么时候装 |
 |---|---|---|
 | `~/.claude/skills/dajuguan/SKILL.md` | 技能（中英文在同一个文件里） | 默认装；`--no-skill` 跳过 |
-| `~/.claude/dajuguan/hooks/` | 钩子脚本和 `triggers.json` | 默认装；`--no-hook` 跳过 |
-| `~/.claude/settings.json` | 加一条 `UserPromptSubmit` 钩子。是合并进去的，你原有的设置和钩子都不动 | 默认装；`--no-hook` 跳过 |
+| `~/.claude/dajuguan/hooks/` | 触发钩子、发信拦截和 `triggers.json` | 默认装；`--no-hook` 跳过 |
+| `~/.claude/settings.json` | 加三条：`UserPromptSubmit`（触发）；`PreToolUse`，挂在给其他会话发消息的工具上（拦截：开头带标记的消息不让发，标记是给你看的）；`SessionStart`（用纯 shell 检查钩子还能不能跑，比如 node 升级后，跑不了就提示一次；Windows 上不装）。是合并进去的，你原有的设置和钩子都不动 | 默认装；`--no-hook` 跳过 |
 | `~/.claude/CLAUDE.md` | 常驻规则，夹在 `<!-- dajuguan:begin -->` 和 `<!-- dajuguan:end -->` 之间 | 默认装；`--no-rule` 跳过 |
 | `~/.codex/skills/dajuguan/SKILL.md` | 同一个技能，给 Codex 用 | 只有加 `--codex` 才装 |
 | `~/.codex/hooks.json` | 同一条钩子，给 Codex 用，和 `settings.json` 一样是合并进去的 | 只有加 `--codex` 才装 |
 | `~/.codex/AGENTS.md` | 同一条规则，给 Codex 用 | 只有加 `--codex` 才装 |
 | `~/.claude/dajuguan/backup/<时间>/` | 上面每个文件改动前的备份 | 自动 |
+| `~/.claude/dajuguan/previous/`、`VERSION` | 上次更新前装的那一版（给 `--rollback` 用），以及现在装的版本号 | 自动 |
 | `~/.claude/dajuguan/my-triggers.txt` | 你自己的触发词，一行一个（可选，你自己建） | 你 |
 | `~/.claude/dajuguan/not-mine.txt` | 你自己定时任务提示词的开头几个字，一行一个，这些不触发（可选，你自己建） | 你 |
 
@@ -347,7 +356,7 @@ node install.mjs --codex        # Claude Code 和 Codex 都装
 |---|---|
 | Claude Code 插件 | 打开一次自动更新：`/plugin` → **Marketplaces** → `dajuguan-big-picture` → **Enable auto-update**（第三方市场默认是关的）。之后 Claude Code 会在会话进行中后台检查，装好新版并提示「Plugin updated · Run /reload-plugins to apply」。不开自动更新的话，手动运行 `claude plugin marketplace update dajuguan-big-picture`，再 `claude plugin update dajuguan@dajuguan-big-picture`。 |
 | Codex 插件 | `codex plugin marketplace upgrade dajuguan-big-picture`（Codex 对自己添加的市场没有自动更新）。 |
-| 脚本 | 在克隆的目录里 `git pull`，再运行一次 `node install.mjs`。显示 `same` 的项表示已经是最新。 |
+| 脚本 | 在克隆的目录里 `git pull`，再运行一次 `node install.mjs`。显示 `same` 的项表示已经是最新。想退回上一版：`node install.mjs --rollback`（再运行一次就回到新版）。 |
 | Claude 网页版、ChatGPT 等 | 重新上传 `SKILL.md`、重新粘贴规则，这些地方不会自己更新。 |
 
 想在出新版时收到通知：在 GitHub 上对这个仓库点 **Watch → Custom → Releases**。每次更新都会发一个带说明的 Release。
@@ -357,7 +366,14 @@ node install.mjs --codex        # Claude Code 和 Codex 都装
 ```bash
 echo '{"prompt":"加导出，比如 PDF"}' | node ~/.claude/dajuguan/hooks/dajuguan-trigger.mjs   # 输出一行 JSON
 echo '{"prompt":"好的"}' | node ~/.claude/dajuguan/hooks/dajuguan-trigger.mjs               # 什么都不输出
+node install.mjs --check                                                                  # 在仓库里运行：各部分都在、钩子还能跑吗（比如升级之后）
 ```
+
+安装器写进去的是 node 的稳定路径（Homebrew 的 `bin/node`，不是带版本号的 `Cellar/…`），升级 node 不会让钩子悄悄失效；万一还是坏了，每次开会话时检查会提示一次。
+
+### 局限：怎么分辨你的话和转来的消息
+
+只靠固定的包裹标签和开头字样（`<cross-session-message>`、`<agent-message>`、`[tw:…]` 线程消息头、系统通知，完整列表在 `triggers.json` 的 `notUser`）。所以：你自己打的字如果以这些开头，会被当成转来的，不会触发；列表里没有的转发格式，会被当成你的话；这些字样谁都能模仿。转来的新任务（`[tw:…] TASK` 或 `FOLLOWUP`）里明确要求用这个方法（「用大局观…」「use the big picture」）的，照样触发。发信拦截只看消息第一行（线程消息头之后的那一行）。
 
 ### 卸载
 

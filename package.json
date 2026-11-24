@@ -1,6 +1,6 @@
 {
   "name": "dajuguan-big-picture",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "A skill + trigger hook that makes AI assistants solve the intent behind a request, not just its literal words.",
   "type": "module",
   "license": "MIT",

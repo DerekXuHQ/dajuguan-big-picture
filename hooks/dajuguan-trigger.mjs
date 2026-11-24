@@ -69,7 +69,11 @@ const PATTERNS = Object.entries(T.patterns || {}).filter(([k]) => !k.startsWith(
 const SCOPE_FIXED = compile(T.scopeFixed);
 const EXPLICIT = compile(T.explicit);
 // 等 alone means "etc." only in a list ("A、B、C 等"), not in 等待 / 等一下 / 平等 / 等级 …
-const DENG = new RegExp(`(?<![${T.deng.notAfter}])等(?![${T.deng.notBefore}])`);
+const DENG = new RegExp(`(?<![${T.deng.notAfter}])等(?![${T.deng.notBefore}]|${(T.deng.notBeforeWords || []).map(esc).join("|") || "$^"})`);
+// Voice-typing filler sounds (嗯、呃、) are not a list.
+const FILLERS = T.fillers ? new RegExp(T.fillers, "g") : null;
+const TRAILERS = (NU.trailers || []).map((re) => new RegExp(re, "i"));
+const ASKED = NU.asked ? { task: new RegExp(NU.asked.task, "i"), ask: new RegExp(NU.asked.ask, "i") } : null;
 
 // Text the user pasted is material, not their own words: drop code blocks and quoted lines.
 function ownWords(prompt) {
@@ -90,16 +94,21 @@ export function classify(prompt, event = {}) {
   if ((origin && origin !== "human") || src === "system" || event.isMeta === true || event.isMeta === "true")
     return { mode: "off", why: `not typed by the user (${origin || src || "meta"})` };
   const raw = String(prompt || "");
-  const text = ownWords(raw);
+  let text = ownWords(raw);
+  for (const re of TRAILERS) text = text.replace(re, "");
   // Nothing left once wrapped messages are dropped, or what is left opens with a relayed message
   // (thread header, system notice, sub-agent hand-back): the prompt is not the user's.
-  if ((!text.trim() && raw.trim()) || NOT_USER_START.some((re) => re.test(text)))
+  if ((!text.trim() && raw.trim()) || NOT_USER_START.some((re) => re.test(text))) {
+    // …unless it is a new task that explicitly asks for the method (a coordinator's "use the big picture").
+    if (ASKED && ASKED.task.test(raw) && ASKED.ask.test(raw)) return { mode: "full", why: "a relayed task asks for it" };
     return { mode: "off", why: "not the user's words" };
+  }
   if (/^\s*\/dajuguan\b/i.test(text)) return { mode: "full", why: "asked for it: /dajuguan" };
   if (!text.trim() || /^\s*\//.test(text)) return { mode: "off", why: "empty or slash command" };
   // A shell command typed in bash mode ("!git status", or wrapped in <bash-input>) is not a request.
   if (/^\s*!/.test(text) || /<bash-(input|stdout|stderr)>/.test(text)) return { mode: "off", why: "shell command" };
   // Naming the method anywhere ("…用大局观", "big picture please") is an explicit request: beats a fixed scope.
+  if (FILLERS) text = text.replace(FILLERS, "");
   const named = EXPLICIT.find((t) => t.re.test(text));
   if (named) return { mode: "full", why: `asked for it: "${named.p}"` };
   const fixed = SCOPE_FIXED.find((t) => t.re.test(text));
@@ -114,13 +123,8 @@ export function classify(prompt, event = {}) {
   return { mode: "light", why: "simple request" };
 }
 
-const MESSAGE = {
-  full: (why) =>
-    `[dajuguan] Big-picture FULL mode for this request (${why}). Use the dajuguan skill: ` +
-    `1) write the original intent + success criterion; 2) widen on kin, impact, options, failure modes — ` +
-    `examples are samples, not the scope; 3) converge on a recommended complete set, sorted into do / propose / drop. ` +
-    `Reply in the user's language, and start the reply with a marker line [Big picture · …] (Chinese replies: 【大局观 · …】).`,
-};
+// The words live in triggers.json "message", so they can be checked against always-on.md and the skill.
+export const MESSAGE = { full: (why) => T.message.join("\n").replace("{why}", why) };
 
 async function main() {
   let raw = "";

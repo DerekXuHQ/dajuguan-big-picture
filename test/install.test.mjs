@@ -10,6 +10,8 @@ const script = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "in
 const HOME = fs.mkdtempSync(path.join(os.tmpdir(), "dajuguan-home-"));
 const run = (...a) => execFileSync(process.execPath, [script, ...a], { env: { ...process.env, DAJUGUAN_HOME: HOME }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
 const f = (...p) => path.join(HOME, ...p);
+// --check exits 1 when something is wrong; read its report either way.
+const checkOut = () => { try { return run("--check"); } catch (e) { return e.stdout; } };
 const read = (...p) => fs.readFileSync(f(...p), "utf8");
 const ours = (s) => (s.hooks?.UserPromptSubmit || []).flatMap((g) => g.hooks).filter((h) => h.command.includes("dajuguan-trigger.mjs"));
 
@@ -55,6 +57,19 @@ const cmd = ours(s)[0].command;
 const out = execFileSync("/bin/sh", ["-c", cmd], { input: JSON.stringify({ prompt: "加导出，比如 PDF" }), encoding: "utf8" });
 assert.match(JSON.parse(out).hookSpecificOutput.additionalContext, /dajuguan/);
 
+// The other two entries: the outgoing guard (only on the message tools) and the start-up check.
+const byMark = (sx, ev, mark) => (sx.hooks?.[ev] || []).filter((g) => (g.hooks || []).some((h) => h.command.includes(mark)));
+assert.equal(byMark(s, "PreToolUse", "dajuguan-outgoing.mjs").length, 1);
+assert.match(byMark(s, "PreToolUse", "dajuguan-outgoing.mjs")[0].matcher, /send_message/);
+const guardCmd = byMark(s, "PreToolUse", "dajuguan-outgoing.mjs")[0].hooks[0].command;
+assert.match(execFileSync("/bin/sh", ["-c", guardCmd], { input: JSON.stringify({ tool_name: "SendMessage", tool_input: { message: "【大局观 · x】" } }), encoding: "utf8" }), /deny/);
+const checkCmd = byMark(s, "SessionStart", "dajuguan-check")[0].hooks[0].command;
+assert.equal(execFileSync("/bin/sh", ["-c", checkCmd], { encoding: "utf8" }), "", "start-up check quiet when all is in place");
+// Codex gets the trigger only.
+assert.equal(Object.keys(JSON.parse(read(".codex", "hooks.json")).hooks).join(), "UserPromptSubmit");
+// --check passes on a fresh install and names the version.
+assert.match(run("--check"), /ok\s+version \d+\.\d+\.\d+[\s\S]*trigger hook runs \(fires on a request: true, quiet on a relayed message: true\)/);
+
 // Reinstall does not duplicate anything.
 const again = run("--codex");
 assert.equal(ours(JSON.parse(read(".codex", "hooks.json"))).length, 1);
@@ -65,6 +80,43 @@ assert.equal(ours(s).length, 1);
 assert.equal(read(".claude", "CLAUDE.md").split("dajuguan:begin").length, 2);
 assert.equal(read(".codex", "AGENTS.md").split("dajuguan:begin").length, 2);
 assert.ok(fs.readdirSync(f(".claude", "dajuguan", "backup")).length >= 1);
+
+// Rollback: an update is kept, and --rollback brings the version before it back (again: forward).
+const trig = f(".claude", "dajuguan", "hooks", "triggers.json");
+const v2 = read(".claude", "dajuguan", "hooks", "triggers.json");
+fs.writeFileSync(f(".claude", "dajuguan", "VERSION"), "0.9.0\n");                 // pretend an older version was installed
+fs.writeFileSync(trig, v2.replace('"大局观"', '"大局观", "OLD-MARK"'));               // …with older files
+const oldMd = read(".claude", "CLAUDE.md").replace("Big-picture rule", "Big-picture rule OLD");
+fs.writeFileSync(f(".claude", "CLAUDE.md"), oldMd);
+assert.match(checkOut(), /note\s+rule block differs[^\n]*\(version 0\.9\.0 installed\)/); // another version: expected, noted
+run("--codex");                                                                      // update to this folder's version
+assert.equal(read(".claude", "dajuguan", "hooks", "triggers.json"), v2);
+// A fix reinstalled under the same version keeps 0.9.0 as the one to roll back to.
+fs.writeFileSync(trig, v2.replace('"大局观"', '"大局观", "SAME-VERSION-FIX"'));
+run("--codex");
+assert.match(run("--rollback"), /Rolled back: \d+\.\d+\.\d+ → 0\.9\.0/);
+assert.match(read(".claude", "dajuguan", "hooks", "triggers.json"), /OLD-MARK/);
+assert.match(read(".claude", "CLAUDE.md"), /Big-picture rule OLD/);
+assert.equal(read(".claude", "CLAUDE.md").split("dajuguan:begin").length, 2);
+assert.equal(ours(JSON.parse(read(".claude", "settings.json"))).length, 1);
+assert.match(run("--rollback"), /Rolled back: 0\.9\.0 → \d+\.\d+\.\d+/);         // and forward again
+assert.equal(read(".claude", "dajuguan", "hooks", "triggers.json"), v2);
+assert.doesNotMatch(read(".claude", "CLAUDE.md"), /OLD/);
+assert.match(run("--check"), /trigger hook runs \(fires on a request: true/);
+// Same version but the rule was edited by hand: a problem.
+const goodMd = read(".claude", "CLAUDE.md");
+fs.writeFileSync(f(".claude", "CLAUDE.md"), goodMd.replace("Big-picture rule", "Big-picture rule EDITED"));
+assert.match(checkOut(), /PROBLEM\s+rule block differs/);
+fs.writeFileSync(f(".claude", "CLAUDE.md"), goodMd);
+// A broken node path (an upgrade removed it) is reported, and the start-up check speaks up.
+const sx = JSON.parse(read(".claude", "settings.json"));
+for (const ev of ["UserPromptSubmit", "SessionStart"]) for (const g of sx.hooks[ev]) for (const h of g.hooks) h.command = h.command.replaceAll(process.execPath, "/no/such/node").replace(/"[^"]*\/bin\/node"/, '"/no/such/node"');
+fs.writeFileSync(f(".claude", "settings.json"), JSON.stringify(sx, null, 2));
+assert.throws(() => run("--check"), (e) => /PROBLEM\s+UserPromptSubmit entry runs \/no\/such\/node/.test(e.stdout));
+const broken = byMark(sx, "SessionStart", "dajuguan-check")[0].hooks[0].command;
+assert.match(JSON.parse(execFileSync("/bin/sh", ["-c", broken], { encoding: "utf8" })).systemMessage, /cannot run/);
+run("--codex");                                                                      // reinstall repairs it
+assert.match(run("--check"), /trigger hook runs \(fires on a request: true/);
 
 // Personal triggers survive uninstall; everything else we added goes away; the user's own things stay.
 fs.writeFileSync(f(".claude", "dajuguan", "my-triggers.txt"), "你看呢\n");
@@ -101,4 +153,4 @@ assert.ok(fs.existsSync(path.join(B, "dajuguan", "hooks", "dajuguan-trigger.mjs"
 assert.equal(ours(JSON.parse(read(".claude", "settings.json"))).length, 0, "default profile untouched");
 
 fs.rmSync(HOME, { recursive: true, force: true });
-console.log("install tests passed: dry run, bilingual install for Claude Code + Codex, hook fires, reinstall, uninstall, bad settings");
+console.log("install tests passed: dry run, bilingual install for Claude Code + Codex, three hooks, --check, --rollback both ways, broken node path, reinstall, uninstall, bad settings");

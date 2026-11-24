@@ -28,7 +28,6 @@
       "等等",
       "之类的",
       "之类",
-      "什么的",
       "啥的",
       "诸如此类",
       "以此类推",
@@ -196,15 +195,18 @@
   ],
   "deng": {
     "notAfter": "平对同相高中初上次均优头二三特何超劣",
-    "notBefore": "待一会下于级到着候我你他她它了效同价号式人得不吧啊呢"
+    "notBefore": "待一会下于级到着候我你他她它了效同价号式人得不吧啊呢",
+    "_notBeforeWords": "等 followed by these asks how long to wait (要等多少时间, 等多久), not etc.; 等多种格式 still counts",
+    "notBeforeWords": ["多少", "多久", "多长", "几分钟", "几秒", "几天", "几小时", "几个小时"]
   },
+  "_fillers": "Voice-typing filler sounds, removed before matching: 嗯、呃、 is not a list (嗯、呃、下载文件夹里面…那些). 啊 and 哈 stay: they are words in 什么 A 啊 B 啊.",
+  "fillers": "(?:嗯|呃|额|唔)+[、，,]?",
   "complex": {
     "minChars": 400,
     "minListItems": 3
   },
   "explicit": [
     "大局观",
-    "大局",
     "全局观",
     "用全局",
     "dajuguan",
@@ -216,10 +218,11 @@
     "_comment": "Context-sensitive triggers (JavaScript regex, case-insensitive). 'like this/that' as 'of this kind', not 'I like this'; 这种情况 but not 这种情况下.",
     "like this / like that": "(?<!\\b(?:i|we|you|they|he|she|really|don't|do not|didn't|would|i'd|we'd|you'd|actually)\\s)\\blike (?:this|that)\\b",
     "这种情况": "这种情况(?!下)",
-    "A、B 这种": "[、，,][^。！？\\n]{0,20}这种(?:情况|问题|东西|的)",
+    "A、B 这种": "[、/][^。！？，,\\n]{0,20}这种(?:情况|问题|东西|的)",
     "like A and B": "(?<!\\b(?:i|we|you|they|he|she|really|don't|do not|didn't|would|i'd|we'd|you'd|actually)\\s)\\blike\\s+(?:the\\s+|a\\s+|an\\s+)?[\\w-]+(?:\\s+[\\w-]+)?\\s*(?:,|\\band\\b|\\bor\\b)",
     "like the X one": "\\blike (?:the|this|that) [\\w-]+ ones?\\b",
-    "A、B 那些": "[、，,][^。！？\\n]{0,15}(?:那些|这些东西|这一些|那一类)",
+    "A、B 那些": "[、/][^。！？，,\\n]{0,15}(?:那些|这些东西|这一些|那一类)",
+    "A、B 什么的": "(?<![缺少干为])什么的",
     "这样的问题": "(?:这样|这种|这类|那种|那样)的?(?:问题|情况|错误|bug|毛病|地方|东西)(?!下)",
     "什么 A 啊 B 啊": "什么[^。！？\\n]{1,12}[啊呀][^。！？\\n]{1,12}[啊呀]"
   },
@@ -243,7 +246,31 @@
     "starts": [
       "\\[tw:[^\\]\\n]+\\]",
       "\\[SYSTEM NOTIFICATION",
-      "\\[Subagent hand-?back\\]"
-    ]
-  }
+      "\\[Subagent hand-?back\\]",
+      "This session is being continued from a previous conversation",
+      "<artifact-content-authored-by-others\\s*/>",
+      "<remote-control-device-report\\s*/>"
+    ],
+    "_trailers": "Notes the host appends after a relayed message (JavaScript regex): removed, so they do not count as the user's words.",
+    "trailers": [
+      "That \"other Claude session\" is an agent working inside this same session[\\s\\S]*$"
+    ],
+    "_asked": "A relayed message still turns full mode on when it is a new task (task) that explicitly asks for the method (ask): a coordinator writing 'use the big picture on this'. Recognition is by these fixed words only, so anyone who types them is believed, and a relayed message that does not use them is never recognised (see README, 'Limits').",
+    "asked": {
+      "task": "\\[tw:[^\\]\\n]+\\]\\s*(?:TASK|FOLLOWUP)\\b",
+      "ask": "(?:用|按|以|走)\\s*(?:大局观|全局观)|/dajuguan\\b|\\b(?:use|with|apply) (?:the )?(?:dajuguan|big[- ]picture)\\b"
+    }
+  },
+  "_message": "What the hook adds to the assistant's context in full mode, one line each; {why} is the reason it fired. always-on.md and the skill say the same (test/trigger.test.mjs checks).",
+  "message": [
+    "[dajuguan] Big-picture FULL mode ({why}). Reply in the user's language; do this first, briefly:",
+    "1. Read the message: an example inside a request is a sample of the scope, so widen it; a hypothetical, a remark or a relayed report is not a request, so don't turn it into tasks; a simple yes/no or factual question: just answer it.",
+    "2. Write the original intent and the success criterion, one line each.",
+    "3. Widen on kin, impact, options and failure modes; every item must trace back to the intent, or it goes to Drop. A limit the user set (only this, only analyse, no new plan, in a hurry) is the scope.",
+    "4. Open the reply with the three columns, 12 lines at most, one line per item: the marker [Big picture · …] (Chinese replies: 【大局观 · …】), then Do now · Propose first (needs the user) · Drop (why). The analysis comes after.",
+    "5. Prefer a reusable mechanism to a one-off patch; for a standing rule the user set, say where it is enforced (a template, a hook, a check), not just that it was noted.",
+    "6. Reversible: do it, then tell. A default you chose for the user: record it and say it can be changed.",
+    "7. If your commitments to the user changed this turn, end with one line: commitments +new / done / waiting on you.",
+    "The marker is for the user: never put it on messages to other sessions or sub-agents."
+  ]
 }

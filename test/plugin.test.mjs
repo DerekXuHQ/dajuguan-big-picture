@@ -31,4 +31,8 @@ const fired = runHook("UserPromptSubmit", { prompt: "加个导出，比如 PDF" 
 assert.match(fired.additionalContext, /^\[dajuguan\]/);
 assert.equal(execFileSync("/bin/sh", ["-c", cmd("UserPromptSubmit")], { input: JSON.stringify({ prompt: "what time is it" }), encoding: "utf8" }), "");
 
-console.log("plugin tests passed: manifests agree (Claude Code + Codex), rule hook and trigger hook run from the plugin root");
+// The outgoing guard is wired to the message tools and stops a message that opens with the marker.
+assert.match(hooks.PreToolUse[0].matcher, /send_message/);
+assert.equal(runHook("PreToolUse", { tool_name: "SendMessage", tool_input: { message: "【大局观 · x】" } }).hookSpecificOutput.permissionDecision, "deny");
+
+console.log("plugin tests passed: manifests agree (Claude Code + Codex), rule hook, trigger hook and outgoing guard run from the plugin root");

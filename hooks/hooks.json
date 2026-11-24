@@ -1,11 +1,14 @@
 {
-  "description": "dajuguan: the always-on rule at session start, and the trigger check on every message",
+  "description": "dajuguan: the always-on rule at session start, the trigger check on every message, and a guard that keeps the big-picture marker off messages to other sessions",
   "hooks": {
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dajuguan-rule.mjs\"", "timeout": 5 } ] }
     ],
     "UserPromptSubmit": [
       { "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dajuguan-trigger.mjs\"", "timeout": 5 } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "mcp__claude-code-remote__send_message|SendMessage", "hooks": [ { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dajuguan-outgoing.mjs\"", "timeout": 5 } ] }
     ]
   }
 }

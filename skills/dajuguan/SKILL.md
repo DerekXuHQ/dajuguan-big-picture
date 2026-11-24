@@ -1,7 +1,7 @@
 ---
 name: dajuguan
 description: "Big picture (大局观): a general working method for any task: development, design, writing, analysis, decisions, research. Read the real need behind the request, widen the view to the whole problem, then deliver a complete plan that solves the original intent. REQUIRED for any important or complex-looking task, and for any request that contains a trigger phrase, however simple: etc., and so on, such as, e.g., you decide, what else, I'm not sure; 等、等等、之类的、什么的、比如、例如、你来补全、你来判断、还有什么、拿不准. Also for open design, choices, naming, research, new ideas and corrections. Skip when the user fixes the scope (only this, just this one, 只改这一处、就这个). 中文：分析实际需求 → 全局视角拓展思路和范围 → 给出完整解决原始意图的方案；本文件上半英文、下半中文，内容相同。"
-version: 2026-11-15.2
+version: 2026-11-24.1
 ---
 
 > **Language / 语言** — This file holds the same method twice: **English first, then 中文 below**. Both halves say exactly the same thing. Read the half in the user's language and reply in that language; when a message mixes languages, follow the language most of the user's own words are in. The reply marker follows the reply language: `[Big picture · …]` in English, `【大局观 · …】` in Chinese.
@@ -26,8 +26,9 @@ Three habits run through all of it: **one example → the whole class** (sample 
 
 ## Modes
 
-- **Full mode** (required): run all three steps and show them in the reply, starting with a marker line such as `[Big picture · …]` / `【大局观 · …】`. Required when ANY of these holds: the task is important or looks complex (a deliverable, several steps, design, plan, research, migration, release, audit, a long or multi-part request); or the request contains a trigger phrase (below), even if it is very simple.
+- **Full mode** (required): run all three steps. Open the reply with the three columns, 12 lines at most, one line per item: a marker line such as `[Big picture · …]` / `【大局观 · …】`, then **Do now · Propose first · Drop (why)**; the analysis comes after. Required when ANY of these holds: the task is important or looks complex (a deliverable, several steps, design, plan, research, migration, release, audit, a long or multi-part request); or the request contains a trigger phrase (below), even if it is very simple.
 - **Light mode**: only for a very simple request with no trigger phrase (lookup, confirmation, small talk, one-field edit). Write one internal line, original intent + success criterion, then just do it.
+- **Not the user's request**: a simple yes/no or factual question (answer it directly); a hypothetical or a remark; a message relayed from another session or sub-agent. No full mode, and the marker never goes on messages to other sessions or sub-agents: it is for the user.
 - **Off**: the user fixes the scope ("only this", "just this one", "nothing else", 只改这一处, 就这个, 别的不用动).
 
 ## Triggers
@@ -184,7 +185,7 @@ When something goes wrong, ask two things: how do I fix this spot, and in what o
 
 ## Report format
 
-Short and structured; lead with the result. Reply in the user's language.
+Short and structured; lead with the result. Reply in the user's language. In full mode the reply opens with the three columns (Do now · Propose first · Drop, 12 lines at most); the items below come after, only those that apply.
 
 | Item | Content |
 |---|---|
@@ -246,8 +247,9 @@ Short and structured; lead with the result. Reply in the user's language.
 
 ## 模式
 
-- **完整模式**（必须）：三步都走，并在回复里体现，开头一行标记 `【大局观 · …】`。满足任一条件即必须：任务重要或看起来复杂（交付物、多步骤、设计、方案、研究、迁移、发布、审计、长请求或多部分请求）；请求里有触发词（见下表），哪怕很简单。
+- **完整模式**（必须）：三步都走。回复开头先给三栏，最多 12 行，每项一行：标记 `【大局观 · …】`，然后是**直接做 · 先提议 · 不做（原因）**，分析放在后面。满足任一条件即必须：任务重要或看起来复杂（交付物、多步骤、设计、方案、研究、迁移、发布、审计、长请求或多部分请求）；请求里有触发词（见下表），哪怕很简单。
 - **轻量模式**：只用于没有触发词的很简单的请求（查询、确认、闲聊、改一个字段）。心里写一行「原始意图 + 成功标准」，然后直接做。
+- **不是用户的请求**：简单的是非题或事实题（直接答）；假设或随口的评论；别的会话或子 agent 转来的消息。不进完整模式；标记是给用户看的，发给其他会话或子 agent 的消息一律不加。
 - **不用**：用户限定了范围（只改这一处、就这个、别的不用动、only this）。
 
 ## 触发词
@@ -404,7 +406,7 @@ Short and structured; lead with the result. Reply in the user's language.
 
 ## 汇报格式
 
-简短、结构化，先说结论：
+简短、结构化，先说结论。完整模式下，回复开头先给三栏（直接做 · 先提议 · 不做，最多 12 行）；下面这些放在后面，用得上的才写：
 
 | 项 | 内容 |
 |---|---|
