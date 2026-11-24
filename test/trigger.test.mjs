@@ -143,7 +143,8 @@ const cases = [
   ["light", "暂时不要跑测试和其他非开发的任务。"],
   // Voice input lists with commas still count; a long clause before a comma does not.
   ["full", "把登录，注册，找回密码那些页面都改一下"],
-  ["full", "登录，注册这种的都要"],
+  ["full", "登录，注册，找回密码这种的都要"],
+  ["light", "先认真的看，再仔细的看，全看完了之后，综合那些给我一个计划"],
   // 「大局」 alone is ordinary speech, not asking for the method.
   ["light", "顾全大局，先把这个按钮改了"],
 ];
@@ -190,6 +191,7 @@ for (const [what, inMsg, inRule, inSkill] of [
   ["three columns, 12 lines", /three columns, 12 lines at most/, /three columns, 12 lines at most[\s\S]*三栏，最多 12 行/, /three columns, 12 lines at most[\s\S]*三栏，最多 12 行/],
   ["examples are samples", /an example inside a request is a sample/, /examples are samples[\s\S]*例子是样本/, /request, example and correction the user gives is a \*\*sample\*\*[\s\S]*例子和纠正都是\*\*样本\*\*/],
   ["relayed messages are not the user's", /a relayed report is not a request/, /relayed from another session[\s\S]*转来的消息都不是我的请求/, /relayed from another session[\s\S]*转来的消息/],
+  ["second time in one area: root review", /second time: stop patching/, /second time: stop patching[\s\S]*第二次出问题或被我纠正：不再单点补/, /second time in the same area: stop patching[\s\S]*第二次出问题，就不再单点补[\s\S]*teamwork SKILL §4b/i],
   ["fixed openings mean machine text", /opens with a fixed header or wrapper/, /opens with a fixed header or wrapper[\s\S]*以固定的消息头或包裹开头/, /opens with a fixed header or wrapper[\s\S]*以固定的消息头或包裹开头/],
   ["no marker to other sessions", /never put it on messages to other sessions/, /never put the marker on messages to other sessions[\s\S]*发给其他会话的消息也不加标记/, /marker never goes on messages to other sessions[\s\S]*发给其他会话或子 agent 的消息一律不加/],
   ["simple question answered directly", /simple yes\/no or factual question/, /simple yes\/no or factual question[\s\S]*简单的是非题或事实题直接答/, /simple yes\/no or factual question[\s\S]*简单的是非题或事实题/],

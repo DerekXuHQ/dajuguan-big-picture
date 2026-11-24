@@ -166,6 +166,8 @@ First ask yourself: **can the goal or an existing rule answer this question?** I
 
 When something goes wrong, ask two things: how do I fix this spot, and in what other forms will this kind of mistake appear? Add guards there too, and remember it.
 
+**Second time in the same area: stop patching.** When the same area breaks or gets corrected a second time, do not fix the new spot on its own. Run a root-cause review instead: list every symptom seen so far, find the cause they share, then ask the user once whether to fix the root or patch for now. With teamwork installed, use its root-cause review (teamwork SKILL §4b); without it, follow the same order yourself.
+
 | Mistake pattern | Guard |
 |---|---|
 | Only writing it down and asking whether to do it | Go through all three steps; if the result is useful, do it |
@@ -384,6 +386,8 @@ Short and structured; lead with the result. Reply in the user's language. In ful
 ### 每次出错都推及同类
 
 出错时问两件事：这一处怎么改？这类错还会以什么形式出现在别处？然后在那些地方都加防护，并存进记忆。
+
+**同一区域第二次出问题，就不再单点补。** 同一区域第二次出问题或被纠正时，不要只修新出问题的那一处，改做根因复盘：先列出到目前为止的全部症状，找出它们共同的根，再问用户一次是根治还是先打补丁。装了 teamwork 就用它的根因复盘（teamwork SKILL §4b）；没装的话，自己按这个顺序做。
 
 过去总结出的通用防护：
 
