@@ -9,15 +9,26 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// The opening line may carry a fixed thread header first ("[tw:X] DONE a -> b T1"), then the body.
-const HEADER = /^\s*\[[a-z]+:[^\]\n]+\][^\n]*\n/i;
-// The marker as the method writes it: a bracket, the name, then "·" (【大局观 · …】, [Big picture · …]).
-// Talking about the marker ("【大局观】标记的规则…") is not the marker.
-const MARKER = /^[\s>*_#-]*[【\[]\s*(?:大局观|全局观|big[- ]picture)\s*[·・]/i;
+// The opening may carry a fixed thread header first ("[tw:X] DONE a -> b T1"), then the body.
+const HEADER = /^\s*\[[a-z]+:[^\]\n]+\]/i;
+// The marker: a bracket, the name, then a separator or the closing bracket
+// (【大局观 · …】, 【大局观】, 【大局观：…】, [Big picture - …]); "【大局观】标记…" names the marker.
+const MARK = "[【\\[]\\s*(?:大局观|全局观|big[- ]picture)\\s*(?:[·・•:：|\\-–—]|[】\\]](?!\\s*(?:标记|规则|这个|开头|的|marker|rule|tag)))";
+// Where it counts as the opening: the start of one of the first lines, after decoration
+// (emphasis, headings, table bars, backticks, invisible characters). A quote ("> ") or a list
+// item ("- ") that starts with it is talking about the marker, not wearing it.
+const AT_START = new RegExp("^[\\s*_#|`\\u200b-\\u200d\\ufeff]*" + MARK, "i");
+const ANYWHERE = new RegExp(MARK, "i");
+const FIRST_LINES = 3;
 
 export function opensWithMarker(text) {
-  const body = String(text || "").replace(HEADER, "");
-  return MARKER.test(body) || MARKER.test(String(text || ""));
+  const lines = String(text || "").split("\n").filter((l) => l.trim());
+  // The header line itself: the marker anywhere after the header ("[tw:X] ACK a -> b T1 【大局观 · …】").
+  if (lines.length && HEADER.test(lines[0])) {
+    if (ANYWHERE.test(lines[0].replace(HEADER, ""))) return true;
+    lines.shift();
+  }
+  return lines.slice(0, FIRST_LINES).some((l) => AT_START.test(l));
 }
 
 // The message text of the tools we watch: send_message (Remote Control), SendMessage (agents).

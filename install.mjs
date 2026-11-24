@@ -34,6 +34,9 @@ const SRC = path.dirname(fileURLToPath(import.meta.url));
 const HOME = process.env.DAJUGUAN_HOME || os.homedir(); // override for testing
 const args = process.argv.slice(2);
 const has = (f) => args.includes(f);
+const FLAGS = ["--check", "--codex", "--dry-run", "--lang", "--no-hook", "--no-rule", "--no-skill", "--rollback", "--uninstall"];
+const unknown = args.filter((a, i) => !FLAGS.includes(a) && args[i - 1] !== "--lang"); // --lang takes a value (old, ignored)
+if (unknown.length) { console.error(`Unknown option ${unknown.join(" ")}; nothing was changed. Options: ${FLAGS.join(" ")}`); process.exit(2); }
 if (has("--lang")) console.log("Note: --lang is no longer needed — the skill and rule hold both English and Chinese.");
 const DRY = has("--dry-run");
 
@@ -104,7 +107,12 @@ function readJson(file) {
   if (!fs.existsSync(file)) return {};
   const t = fs.readFileSync(file, "utf8").trim();
   if (!t) return {};
-  try { return JSON.parse(t); } catch { throw new Error(`${file} is not valid JSON; fix it first, nothing was changed.`); }
+  let j;
+  try { j = JSON.parse(t); } catch { throw new Error(`${file} is not valid JSON; fix it first, nothing was changed.`); }
+  // Hooks files: { hooks: { <Event>: [ … ] } }. Another shape is not ours to rewrite.
+  const bad = j && j.hooks != null && (typeof j.hooks !== "object" || Array.isArray(j.hooks) || Object.values(j.hooks).some((v) => !Array.isArray(v)));
+  if (bad) throw new Error(`${file}: "hooks" is not in the expected shape ({ Event: [ … ] }); fix it first, nothing was changed.`);
+  return j;
 }
 function rule() {
   const md = fs.readFileSync(path.join(SRC, "always-on.md"), "utf8");
@@ -204,7 +212,11 @@ function saveState(dir, st) {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, "state.json"), JSON.stringify(st, null, 2) + "\n");
 }
-const loadState = (dir) => { const f = path.join(dir, "state.json"); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : null; };
+const loadState = (dir) => {
+  const f = path.join(dir, "state.json");
+  if (!fs.existsSync(f)) return null;
+  try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { throw new Error(`${f} is damaged (not valid JSON); nothing was changed.`); }
+};
 function applyState(st) {
   // Hook files: exactly the saved set.
   for (const f of HOOK_FILES) {
@@ -343,8 +355,14 @@ function uninstall() {
 }
 
 if (has("--check")) { check(); process.exit(); }
-if (has("--rollback")) { rollback(); process.exit(); }
-has("--uninstall") ? uninstall() : install();
+try {
+  // Read the files we would change first: a broken one stops everything before anything is touched.
+  readJson(P.settings);
+  if (fs.existsSync(P.codexHooks)) readJson(P.codexHooks);
+  loadState(PREV);
+  if (has("--rollback")) { rollback(); process.exit(); }
+  has("--uninstall") ? uninstall() : install();
+} catch (e) { console.error("dajuguan: " + e.message); process.exit(1); }
 console.log(`${DRY ? "Dry run — nothing changed. Would:" : has("--uninstall") ? "Uninstalled:" : "Installed:"}\n${log.join("\n")}`);
 if (!DRY && fs.existsSync(BACKUP)) console.log(`\nBackups of changed files: ${BACKUP.replace(HOME, "~")}`);
 if (!DRY && !has("--uninstall")) {

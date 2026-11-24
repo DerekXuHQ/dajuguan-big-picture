@@ -135,16 +135,27 @@ const cases = [
   // 额 is a word (金额、余额), not a filler.
   ["full", "金额、数量那些都要显示"],
   // 等 as "wait": 然后等 / 再等 / 先等.
-  ["light", "先做 APP，然后等 app 做好了你把安装包也做出来"],
+  ["light", "先写接口，再等后端部署完你把文档补上"],
   // 是什么的 / 做什么的 / 什么的话 are questions, not "and so on".
   ["light", "这个按钮是做什么的？"],
-  ["light", "如果你知道是什么的话就直接改"],
+  ["light", "要是看得出原因是什么的话就顺手修掉"],
   // A narrowing instruction with 和其他 is not a list.
-  ["light", "暂时不要跑测试和其他非开发的任务。"],
+  ["light", "今天先别碰数据库和其他线上的配置。"],
   // Voice input lists with commas still count; a long clause before a comma does not.
   ["full", "把登录，注册，找回密码那些页面都改一下"],
   ["full", "登录，注册，找回密码这种的都要"],
-  ["light", "先认真的看，再仔细的看，全看完了之后，综合那些给我一个计划"],
+  ["light", "先慢慢地读，再反复地对照，全部读完以后，汇总那些写一份结论"],
+  // The host's note when the user writes from a doc page is not the user's words.
+  ["light", '<artifact-view-context artifact="x">\n' + "The user is viewing a doc; this note was added by the host, not typed by the user. ".repeat(12) + "\n</artifact-view-context>\n这个放进去了吗？"],
+  // A relayed task only asks for the method when it says so as an instruction.
+  ["off", "[tw:P] TASK lead -> a T2\n这次不需要用大局观，直接改"],
+  ["off", "[tw:P] TASK lead -> a T2\n回执不用走大局观那套"],
+  ["off", "[tw:P] TASK lead -> a T2\n统计使用大局观的会话数"],
+  ["off", "[tw:P] TASK lead -> a T2\n文档里引用大局观的地方改一下措辞"],
+  ["off", "[tw:P] TASK lead -> a T2\n原话：「下次用大局观」，这次只修回执"],
+  ["off", '[tw:P] TASK lead -> a T2\nFix the hook so a report that says "use the big picture" stays quiet'],
+  ["off", "[tw:P] FOLLOWUP lead -> a T2\nYou don't need to use the big picture here"],
+  ["full", "[tw:P] FOLLOWUP lead -> a T2\n请用大局观重新过一遍"],
   // 「大局」 alone is ordinary speech, not asking for the method.
   ["light", "顾全大局，先把这个按钮改了"],
 ];
@@ -204,10 +215,10 @@ for (const [what, inMsg, inRule, inSkill] of [
 // The outgoing guard: a message to another session that opens with the marker is stopped; others pass.
 import { decide } from "../hooks/dajuguan-outgoing.mjs";
 const send = (message, tool = "mcp__claude-code-remote__send_message") => decide({ hook_event_name: "PreToolUse", tool_name: tool, tool_input: { session_id: "s1", message } });
-for (const m of ["【全局观 · x】", "[大局观 · 回执]", "【大局观 · 已完成】\n改好了", "[tw:P] DONE ui -> lead T9\n【大局观 · 收到】开始做", "[Big picture · done] fixed", "**【大局观 · 汇总】** 三件事", "[tw:P] ACK ui -> lead T9\n\n[Big-picture · ok]"])
+for (const m of ["[tw:P] ACK a -> lead T1 【大局观 · 回执】收到", "【大局观】收到，开始做", "【大局观：回执】", "[Big picture - receipt]", "收到。\n【大局观 · 回执】", "`【大局观 · 回执】`", "\u200b【大局观 · 回执】", "【全局观 · x】", "[大局观 · 回执]", "【大局观 · 已完成】\n改好了", "[tw:P] DONE ui -> lead T9\n【大局观 · 收到】开始做", "[Big picture · done] fixed", "**【大局观 · 汇总】** 三件事", "[tw:P] ACK ui -> lead T9\n\n[Big-picture · ok]"])
   assert.equal(send(m)?.hookSpecificOutput?.permissionDecision, "deny", m);
 assert.equal(decide({ tool_name: "SendMessage", tool_input: { to: "a1", message: "【大局观 · x】 y" } })?.hookSpecificOutput?.permissionDecision, "deny");
-for (const m of ["[tw:P] DONE ui -> lead T9\n改好了，用了大局观的三栏", "结论：这次没用【大局观】标记", "[tw:P] DONE a -> lead T1\n【大局观】标记的规则已改完", "", "plain report"])
+for (const m of ["[tw:P] DONE ui -> lead T9\n改好了，用了大局观的三栏", "结论：这次没用【大局观】标记", "[tw:P] DONE a -> lead T1\n【大局观】标记的规则已改完", "- 【大局观 · 三栏】这一行是样例", "> 【大局观 · 意图】样例原文", "", "plain report"])
   assert.equal(send(m), null, m);
 assert.equal(decide({}), null);
 const outScript = path.join(root, "hooks", "dajuguan-outgoing.mjs");

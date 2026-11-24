@@ -157,6 +157,21 @@ assert.equal(read(".claude", "settings.json"), "{ not json");
 assert.ok(!fs.existsSync(f(".claude", "skills", "dajuguan")), "nothing installed when settings are broken");
 assert.match(checkOut(), /PROBLEM\s+.*not valid JSON/);
 
+// settings.json in another shape (an event that is not a list): refuse before touching anything.
+fs.writeFileSync(f(".claude", "settings.json"), JSON.stringify({ hooks: { UserPromptSubmit: { hooks: [] } } }));
+assert.throws(() => run(), /not in the expected shape/);
+assert.ok(!fs.existsSync(f(".claude", "skills", "dajuguan")), "nothing installed when the hooks shape is unexpected");
+assert.throws(() => run("--uninstall"), /not in the expected shape/);
+// A mistyped option changes nothing.
+fs.writeFileSync(f(".claude", "settings.json"), JSON.stringify(mine, null, 2));
+assert.throws(() => run("--rolback"), /Unknown option --rolback/);
+assert.ok(!fs.existsSync(f(".claude", "skills", "dajuguan")), "a mistyped option installs nothing");
+// A damaged rollback point: a clear message, not a stack trace.
+fs.mkdirSync(f(".claude", "dajuguan", "previous"), { recursive: true });
+fs.writeFileSync(f(".claude", "dajuguan", "previous", "state.json"), "{ broken");
+assert.throws(() => run("--rollback"), /is damaged/);
+fs.rmSync(f(".claude", "dajuguan", "previous"), { recursive: true });
+
 // A second profile (CLAUDE_CONFIG_DIR) gets its own copy; the default profile is untouched.
 fs.writeFileSync(f(".claude", "settings.json"), JSON.stringify(mine, null, 2));
 const B = f(".claude-b");
@@ -167,4 +182,4 @@ assert.ok(fs.existsSync(path.join(B, "dajuguan", "hooks", "dajuguan-trigger.mjs"
 assert.equal(ours(JSON.parse(read(".claude", "settings.json"))).length, 0, "default profile untouched");
 
 fs.rmSync(HOME, { recursive: true, force: true });
-console.log("install tests passed: dry run, bilingual install for Claude Code + Codex, three hooks, --check, --rollback both ways, broken node path, reinstall, uninstall, bad settings");
+console.log("install tests passed: dry run, bilingual install for Claude Code + Codex, three hooks, --check, --rollback both ways, broken node path, reinstall, uninstall, bad settings, unexpected hooks shape, mistyped option, damaged rollback point");

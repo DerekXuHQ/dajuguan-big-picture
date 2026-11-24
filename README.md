@@ -191,7 +191,7 @@ The installer writes a stable path to node (Homebrew's `bin/node`, not the versi
 
 ### Limits: how it tells your words from relayed ones
 
-It goes by fixed wrappers and opening words only (`<cross-session-message>`, `<agent-message>`, `[tw:…]` thread headers, system notices; the full list is `notUser` in `triggers.json`). So: whatever you type that opens with one of those is taken as relayed and never triggers; a relayed message in a form the list does not know is taken as yours; and anyone can imitate the words. A relayed new task (`[tw:…] TASK` or `FOLLOWUP`) that explicitly asks for the method ("用大局观…", "use the big picture") still turns it on. The outgoing guard only looks at the opening of the message (after a thread header), and only for the marker as the method writes it (a bracket, the name, then `·`); it does not watch other tools that start agents or sessions. `--rollback` covers the Claude Code profile it runs in, not Codex. The start-up check looks for node, the hook files and the rule block; if an upgrade wiped the hook entries from `settings.json`, the check is gone with them — run `--check` by hand then.
+It goes by fixed wrappers and opening words only (`<cross-session-message>`, `<agent-message>`, `[tw:…]` thread headers, system notices; the full list is `notUser` in `triggers.json`). So: whatever you type that opens with one of those is taken as relayed and never triggers; a relayed message in a form the list does not know is taken as yours; and anyone can imitate the words. A relayed new task (`[tw:…] TASK` or `FOLLOWUP`) that explicitly asks for the method ("用大局观…", "use the big picture") still turns it on — said as an instruction: a "not"/"不" earlier in the same sentence, quoted words and words like 使用 do not count; only the first thread header in the prompt is read. The outgoing guard looks at the header line and the first three lines after it, for the marker at the start of a line (a bracket, the name, then a separator such as `·` `:` `-` or the closing bracket); a line that starts with `>` or `- ` is taken as quoting it. It does not watch other tools that start agents or sessions. `--rollback` covers the Claude Code profile it runs in, not Codex. The start-up check looks for node, the hook files and the rule block; if an upgrade wiped the hook entries from `settings.json`, the check is gone with them — run `--check` by hand then.
 
 ## Uninstall
 
@@ -373,7 +373,7 @@ node install.mjs --check                                                        
 
 ### 局限：怎么分辨你的话和转来的消息
 
-只靠固定的包裹标签和开头字样（`<cross-session-message>`、`<agent-message>`、`[tw:…]` 线程消息头、系统通知，完整列表在 `triggers.json` 的 `notUser`）。所以：你自己打的字如果以这些开头，会被当成转来的，不会触发；列表里没有的转发格式，会被当成你的话；这些字样谁都能模仿。转来的新任务（`[tw:…] TASK` 或 `FOLLOWUP`）里明确要求用这个方法（「用大局观…」「use the big picture」）的，照样触发。发信拦截只看消息开头（线程消息头之后），也只认方法写出来的那种标记（括号、名字、再跟 `·`）；它不管其他用来开 agent 或会话的工具。`--rollback` 只退回当前这个 Claude Code 配置，不管 Codex。开会话时的检查只看 node、钩子文件和规则块；如果升级把 `settings.json` 里的钩子条目整个冲掉了，检查本身也跟着没了，这时手动跑一次 `--check`。
+只靠固定的包裹标签和开头字样（`<cross-session-message>`、`<agent-message>`、`[tw:…]` 线程消息头、系统通知，完整列表在 `triggers.json` 的 `notUser`）。所以：你自己打的字如果以这些开头，会被当成转来的，不会触发；列表里没有的转发格式，会被当成你的话；这些字样谁都能模仿。转来的新任务（`[tw:…] TASK` 或 `FOLLOWUP`）里明确要求用这个方法（「用大局观…」「use the big picture」）的，照样触发；但要是命令句：同一句前面有「不」「别」之类、在引号里、或是「使用」「引用」这种词里的，不算；一条输入里只读第一个线程消息头。发信拦截看消息头那一行和后面三行，认行首的标记（括号、名字、再跟 `·`、`：`、`-` 这类分隔或直接收括号）；以 `>` 或 `- ` 开头的行当作引用，不拦。它不管其他用来开 agent 或会话的工具。`--rollback` 只退回当前这个 Claude Code 配置，不管 Codex。开会话时的检查只看 node、钩子文件和规则块；如果升级把 `settings.json` 里的钩子条目整个冲掉了，检查本身也跟着没了，这时手动跑一次 `--check`。
 
 ### 卸载
 

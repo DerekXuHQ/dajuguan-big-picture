@@ -73,15 +73,26 @@ const DENG = new RegExp(`(?<![${T.deng.notAfter}])等(?![${T.deng.notBefore}]|${
 // Voice-typing filler sounds (嗯、呃、) are not a list.
 const FILLERS = T.fillers ? new RegExp(T.fillers, "g") : null;
 const TRAILERS = (NU.trailers || []).map((re) => new RegExp(re, "i"));
-const ASKED = NU.asked ? { task: new RegExp(NU.asked.task, "i"), ask: new RegExp(NU.asked.ask, "i") } : null;
+const ASKED = NU.asked ? {
+  task: new RegExp(NU.asked.task, "i"),
+  ask: new RegExp(NU.asked.ask, "gi"),
+  neg: NU.asked.negation ? new RegExp(NU.asked.negation, "i") : null,
+} : null;
+// Quoted words are someone else's words: 「…」『…』“…” "…" `…`.
+const QUOTED = /「[^」]*」|『[^』]*』|“[^”]*”|"[^"\n]*"|`[^`\n]*`/g;
 // A relayed message asks for the method only when its own first header is a new task (TASK / FOLLOWUP)
 // and the words after that header ask for it. A sub-agent's report never does: it may quote tasks.
 function relayedAsk(raw) {
   if (!ASKED || /<agent-message\b|\[Subagent hand-?back\]/i.test(raw)) return false;
   const m = raw.match(/^[ \t]*\[tw:[^\]\n]+\][^\n]*$/m);
   if (!m || !ASKED.task.test(m[0])) return false;
-  const body = raw.slice(m.index + m[0].length).split(/<\/cross-session-message/i)[0];
-  return ASKED.ask.test(body);
+  const body = raw.slice(m.index + m[0].length).split(/<\/cross-session-message/i)[0].replace(QUOTED, " ");
+  // An instruction, not a mention: nothing earlier in the same clause says "not" / 不 / 别 …
+  for (const a of body.matchAll(ASKED.ask)) {
+    const clause = body.slice(0, a.index).split(/[，。；！？,.;!?\n]/).pop();
+    if (!ASKED.neg || !ASKED.neg.test(clause)) return true;
+  }
+  return false;
 }
 
 // Text the user pasted is material, not their own words: drop code blocks and quoted lines.

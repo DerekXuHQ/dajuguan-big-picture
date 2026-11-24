@@ -230,6 +230,7 @@
     "_comment": "Text that reaches the hook but was not typed by the user: other sessions, sub-agents, background and scheduled runs. Wrapped blocks are dropped; a prompt that starts with one of the 'starts' patterns (JavaScript regex, case-insensitive) is not the user's at all.",
     "tags": [
       "cross-session-message",
+      "artifact-view-context",
       "agent-message",
       "teammate-message",
       "child-session-event",
@@ -255,10 +256,11 @@
     "trailers": [
       "That \"other Claude session\" is an agent working inside this same session[\\s\\S]*$"
     ],
-    "_asked": "A relayed message still turns full mode on when it is a new task (task) that explicitly asks for the method (ask): a coordinator writing 'use the big picture on this'. Recognition is by these fixed words only, so anyone who types them is believed, and a relayed message that does not use them is never recognised (see README, 'Limits').",
+    "_asked": "A relayed message still turns full mode on when it is a new task (task) that explicitly asks for the method (ask): a coordinator writing 'use the big picture on this'. Recognition is by these fixed words only (said as an instruction: not negated earlier in the same clause, not inside quotes, not part of another word such as 使用 / 引用), so anyone who types them is believed, and a relayed message that does not use them is never recognised (see README, 'Limits').",
     "asked": {
       "task": "^\\s*\\[tw:[^\\]\\n]+\\]\\s*(?:TASK|FOLLOWUP)\\b",
-      "ask": "(?<!不|别|不要|无需|没|勿|别再)(?:用|按|以|走)\\s*(?:大局观|全局观)|(?<![\\w./~-])/dajuguan(?![\\w-])|(?<!(?:don't|do not|no need to|not|never)\\s)\\b(?:use|apply) (?:the )?(?:dajuguan|big[- ]picture)(?![\\w-])"
+      "ask": "(?:^|(?<=[\\s，。；：！？、,.;:!?(（]|请|要|先|就|再|都|统一|全部|一律))(?:用|按|以|走)\\s*(?:大局观|全局观)|(?<![\\w./~-])/dajuguan(?![\\w-])|\\b(?:use|apply) (?:the )?(?:dajuguan|big[- ]picture)(?![\\w-])",
+      "negation": "不|别|勿|没|无需|免|\\b(?:no need|don't|do not|doesn't|does not|not|never|without|instead of)\\b"
     }
   },
   "_message": "What the hook adds to the assistant's context in full mode, one line each; {why} is the reason it fired. always-on.md and the skill say the same (test/trigger.test.mjs checks).",
